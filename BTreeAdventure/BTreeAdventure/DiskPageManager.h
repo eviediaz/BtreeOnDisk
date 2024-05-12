@@ -78,6 +78,24 @@ namespace APP_CORE
 		{
 			return isEmpty;
 		}
+
+		/// <summary>
+		/// Saves a Register object at position n in the file 
+		/// </summary>
+		/// <typeparam name="Register"></typeparam>
+		/// <param name="n"></param>
+		/// <param name="reg"></param>
+		template<class Register>
+		void save(const long& n, Register& reg) {
+			clear(); // clear state of fstream object 
+
+			// move the write pointer from the begining of the file to position n * sizof(Register) 
+			seekp(n * sizeof(Register), std::ios::beg);
+
+			// write content of reg object to file
+			// converts the pointer of reg into a pointer to char because write expects char with the number of bytes to write
+			write(reinterpret_cast<char*>(&reg), sizeof(reg));
+		}
 	}
 }
 
