@@ -76,53 +76,94 @@ public:
     }
 };
 
-std::vector<std::tuple<int, int, int>> Kruskal(Grafo &G)
+bool compare(const std::tuple<int, int, int>& a, const std::tuple<int, int, int>& b)
 {
-    std::vector<std::tuple<int, int, int>> MST;                                     // lista  de tuplas para guardar el MST (Minimum Spanning Tree)
-    UnionFind uf(G.get_nn());                                                       // crear una instancia de UnionFind, le pasamos el numero de nodos
-    std::vector<std::tuple<int, int, int>> aristas_ordenadas = G.obtener_aristas(); // obtenemos las aristas
-    std::sort(aristas_ordenadas.begin(), aristas_ordenadas.end());                  // Paso 1: las ordenamos en orden no decreciente
+    return std::get<2>(a) < std::get<2>(b);
+}
 
-    for (auto &arista : aristas_ordenadas) // Paso 2: Agregar aristas al MST, asegurando que no formen ciclos para peso, u, v en aristas ordenadas:
+std::vector<std::tuple<int, int, int>> kruskal(Grafo& G)
+{
+    std::vector<std::tuple<int, int, int>> mst; // Minimum Spanning Tree
+    std::vector<std::tuple<int, int, int>> aristas = G.obtener_aristas();
+
+    // Ordenar las aristas en orden creciente de peso
+    std::sort(aristas.begin(), aristas.end(), compare);
+
+    // Inicializar UnionFind
+    UnionFind uf(G.get_nn());
+
+    // Recorrer todas las aristas en orden creciente de peso
+    for (const auto& arista : aristas)
     {
-        int peso, u, v;
-        std::tie(u, v, peso) = arista;          // desempaqueta la tupla arista en tres variables
-        if (uf.encontrar(u) != uf.encontrar(v)) // si u y v no pertenecen al mismo conjunto, lo que significa
-                                                // que agregar la arista no formaría un ciclo en el MST, se une u y v
+        int u, v, peso;
+        std::tie(u, v, peso) = arista;
+
+        // Si unir estos dos nodos no crea un ciclo en el MST, añadir esta arista al MST
+        if (uf.encontrar(u) != uf.encontrar(v))
         {
+            mst.push_back(arista);
             uf.unir(u, v);
-            MST.push_back(std::make_tuple(u, v, peso)); // agregamos como tupla a nuestro MST
         }
     }
 
-    return MST;
+    return mst;
 }
 
 int main()
 {
-    Grafo G(500); // Crear un grafo con 500 nodos
+    int NUMBER_NODES = 5;
+    int MAX_NUMBER_GEN_SEED = 500;
+    Grafo G(NUMBER_NODES); // Crear un grafo con 500 nodos
 
     srand(time(0)); // Initialize random number generator.
 
-    for (int i = 0; i < 500; i++)
+    // Agregar las aristas con los pesos especificados
+    G.agregar_arista(0, 1, 2);
+    G.agregar_arista(0, 2, 9);
+    G.agregar_arista(0, 3, 9);
+    G.agregar_arista(0, 4, 9);
+    G.agregar_arista(1, 2, 9);
+    G.agregar_arista(1, 2, 9);
+    G.agregar_arista(1, 3, 2);
+    G.agregar_arista(1, 4, 8);
+    G.agregar_arista(2, 3, 1);
+    G.agregar_arista(2, 4, 9);
+    G.agregar_arista(3, 4, 1);
+    /*
+    for (int i = 0; i < NUMBER_NODES; i++)
     {
-        for (int j = i + 1; j < 500; j++)
+        for (int j = i + 1; j < NUMBER_NODES; j++)
         {
-            int peso = (rand() % 50) + 1; // Genera un peso aleatorio entre 1 y 50
+            int peso = (rand() % MAX_NUMBER_GEN_SEED) + 1; // Genera un peso aleatorio entre 1 y 50
             G.agregar_arista(i, j, peso);
         }
     }
+    */
+
+    G.printGraph();
 
     // Correr el algoritmo de Kruskal para encontrar el MST
-    std::vector<std::tuple<int, int, int>> MST = Kruskal(G);
+    //std::vector<std::tuple<int, int, int>> MST = Kruskal(G);
 
+
+    std::cout << " \nKRUSKAL RESULT : " << std::endl;
     // Imprimir las aristas con el MST
+    /*
     for (auto &arista : MST)
     {
         int u, v, peso;
         std::tie(u, v, peso) = arista;
         std::cout << u << " - " << v << " : " << peso << std::endl;
     }
+    */
+    std::vector<std::tuple<int, int, int>> mst = kruskal(G);
+    for (const auto& arista : mst)
+    {
+        int u, v, peso;
+        std::tie(u, v, peso) = arista;
+        std::cout << u << " - " << v << " : " << peso << std::endl;
+    }
+
 
     return 0;
 }
