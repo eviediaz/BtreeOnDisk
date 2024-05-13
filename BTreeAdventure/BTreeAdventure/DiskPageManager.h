@@ -24,10 +24,14 @@ namespace APP_CORE
 			// main and public functions
 			DiskPageManager(std::string fileName, bool truncate);
 			~DiskPageManager();
+
 			inline bool IsEmpty();
 
 			template<class Register>
 			void save(const long& n, Register& reg);
+
+			template<class Register>
+			void erase(const long& n);
 
 		private:
 			// private attributes
@@ -86,7 +90,7 @@ namespace APP_CORE
 		/// <param name="n"></param>
 		/// <param name="reg"></param>
 		template<class Register>
-		void save(const long& n, Register& reg) {
+		void DiskPageManager::save(const long& n, Register& reg) {
 			clear(); // clear state of fstream object 
 
 			// move the write pointer from the begining of the file to position n * sizof(Register) 
@@ -95,6 +99,19 @@ namespace APP_CORE
 			// write content of reg object to file
 			// converts the pointer of reg into a pointer to char because write expects char with the number of bytes to write
 			write(reinterpret_cast<char*>(&reg), sizeof(reg));
+		}
+
+		/// <summary>
+		/// DOES NOT DELETE, MARKS the record at position N in the file AS "deleted"
+		/// </summary>
+		/// <typeparam name="Register"></typeparam>
+		/// <param name="n"></param>
+		template<class Register>
+		void DiskPageManager::erase(const long& n) {
+			clear();
+			char mark = 'N';
+			seekg(n * sizeof(Register), std::ios::beg);
+			write(&mark, 1);
 		}
 	}
 }
