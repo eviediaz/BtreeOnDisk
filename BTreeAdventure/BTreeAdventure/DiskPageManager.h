@@ -33,6 +33,9 @@ namespace APP_CORE
 			template<class Register>
 			void erase(const long& n);
 
+			template<class Register>
+			bool recover(const long& n, Register& reg);
+
 		private:
 			// private attributes
 			std::string fileName; // store file name
@@ -112,6 +115,22 @@ namespace APP_CORE
 			char mark = 'N';
 			seekg(n * sizeof(Register), std::ios::beg);
 			write(&mark, 1);
+		}
+
+		/// <summary>
+		/// reads data at N position, returns true if the number of characters are greater than zero else return false
+		/// </summary>
+		/// <typeparam name="Register"></typeparam>
+		/// <param name="n"></param>
+		/// <param name="reg"></param>
+		/// <returns></returns>
+		template<class Register>
+		bool DiskPageManager::recover(const long& n, Register& reg)
+		{
+			clear();
+			seekg(n * sizeof(Register), std::ios::beg);
+			read(reinterpret_cast<char*>(&reg), sizeof(reg));
+			return gcount() > 0;
 		}
 	}
 }
