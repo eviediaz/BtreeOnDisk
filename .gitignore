@@ -32,8 +32,8 @@
 *.app
 
 # registry files
-.bin
-.index
+*.bin
+*.index
 
 # Directories
 .vs/
