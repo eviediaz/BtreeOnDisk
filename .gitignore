@@ -31,6 +31,9 @@
 *.out
 *.app
 
+# registry files
+.bin
+.index
 
 # Directories
 .vs/
