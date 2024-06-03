@@ -23,5 +23,14 @@
     <ClInclude Include="DiskPageManager.h">
       <Filter>Archivos de origen</Filter>
     </ClInclude>
+    <ClInclude Include="BTreeNodeDisk.h">
+      <Filter>Archivos de origen</Filter>
+    </ClInclude>
+    <ClInclude Include="BTreeDiskIterator.h">
+      <Filter>Archivos de origen</Filter>
+    </ClInclude>
+    <ClInclude Include="BTreeDisk.h">
+      <Filter>Archivos de origen</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
