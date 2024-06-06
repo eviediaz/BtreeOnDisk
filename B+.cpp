@@ -1,6 +1,10 @@
 #include <vector>
 #include <algorithm> // para std::lower_bound y std::upper_bound
-#include "peruvian.h"
+
+struct Peruvian{
+    uint64_t dni;
+    uint64_t idPosition;
+};
 
 class BPlusTreeNode {
 public:
