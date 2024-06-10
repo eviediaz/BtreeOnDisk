@@ -12,21 +12,30 @@ public:
     {
         filename = filename;
         open(filename, std::ios::in | std::ios::out | std::ios::binary);
+        if (!is_open()) {
+            std::cerr << "Error al abrir el archivo: " << filename << std::endl;
+        }
     };
 
     // Destructor
     ~PageManager()
     {
-        close();
+        if (is_open()) {
+            close();
+        }
     }
 
     template <typename T>
     T readPage(const long &n, const T &object)
     {
+        T object;
         clear();
         seekg(n * sizeof(T), std::ios::beg);
-        read(reinterpret_cast<char *>(&T), sizeof(T));
-        return T;
+        read(reinterpret_cast<char*>(&object), sizeof(T));
+        if (!good()) {
+            std::cerr << "Error al leer page: " << n << std::endl;
+        }
+        return object;
     }
 
     template <typename T>
@@ -38,6 +47,9 @@ public:
             seekp(i * sizeof(p[i]), std::ios::beg);
             p[i].id = i;
             write(reinterpret_cast<char *>(&p[i]), sizeof(p[i]));
+            if (!good()) {
+                std::cerr << "Error al escribir en page: " << n << std::endl;
+            }
         }
     }
 
