@@ -25,6 +25,14 @@ public:
         }
     }
 
+    /// @brief Get the size of a the file
+    /// @return the size of a file
+    long getFileSize() {
+        clear();
+        seekg(0, std::ios::end);
+        return tellg();
+    }
+
     template <typename T>
     T readPage(const long &n, const T &object)
     {

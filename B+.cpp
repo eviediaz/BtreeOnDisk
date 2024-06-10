@@ -100,6 +100,24 @@ public:
         return newNode;
     }
 
+    /// @brief Load data from a file then create a b+tree from it, should use utilities method to calculate numPages
+    /// @tparam T 
+    /// @tparam U 
+    /// @param pageManager 
+    /// @param numPages 
+    /// @return B+tree  from file
+    template <typename T, typename U>
+    BPlusTreeNode<T, U>* createBPlusTreeFromPageManager(PageManager &pageManager, long numPages) {
+        BPlusTreeNode<T, U>* root = new BPlusTreeNode<T, U>(true);
+
+        for (long i = 0; i < numPages; ++i) {
+            U object = pageManager.readPage<U>(i);
+            root->insert(object.dni, new U(object));
+        }
+
+        return root;
+    }
+
 private:
     static const size_t maxKeys = 4; // Número máximo de claves por nodo antes de dividir
     BPlusTreeNode* next; // Puntero al siguiente nodo (solo para nodos hoja)
