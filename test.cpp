@@ -2,6 +2,9 @@
 #include <vector>
 #include <iostream>
 #include <cstring>
+#include <PageManager.h>
+#include "B+.h"
+#include "Utilities.h"
 
 class Personita
 {
@@ -44,6 +47,30 @@ void read(int id, std::fstream &archivo)
         std::cerr << "Error leyendo en el índice " << id << std::endl;
     }
 };
+
+
+void testBTREE(){
+    PageManager pageManager("lol.bin");
+    
+    // Assuming we know how many pages there are
+    BPlusTreeNode<std::string, Personita>* root = new BPlusTreeNode<std::string, Personita>(true);
+    long recordSize = sizeof(Personita);
+    long numPages = calculateNumPages("lol.bin", recordSize);
+    auto bPlusTree = root->createBPlusTreeFromPageManager<std::string, Personita>(pageManager, numPages);
+
+    /* search 
+    // Additional logic for using the B+Tree
+    Personita* found = bPlusTree->search("71454824");
+    if (found) {
+        std::cout << "Found: " << found->dni << std::endl;
+    } else {
+        std::cout << "Not found." << std::endl;
+    }
+    */
+
+    // Clean up B+Tree
+    delete bPlusTree;
+}
 
 int main()
 {
