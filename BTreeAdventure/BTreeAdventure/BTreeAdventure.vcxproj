@@ -130,10 +130,14 @@
     <ClCompile Include="BTreeAdventure.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="BTree.h" />
     <ClInclude Include="BTreeDisk.h" />
     <ClInclude Include="BTreeDiskIterator.h" />
+    <ClInclude Include="BTreeNode.h" />
     <ClInclude Include="BTreeNodeDisk.h" />
     <ClInclude Include="DiskPageManager.h" />
+    <ClInclude Include="PageManager.h" />
+    <ClInclude Include="Person.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

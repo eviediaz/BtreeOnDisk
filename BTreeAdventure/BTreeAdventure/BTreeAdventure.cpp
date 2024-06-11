@@ -2,6 +2,150 @@
 //
 
 #define _CRT_SECURE_NO_WARNINGS
+#include <fstream>
+#include <vector>
+#include <iostream>
+#include <cstring>
+#include "PageManager.h"
+#include "Person.h"
+#include "BTree.h"
+
+void write(std::vector<Personita>& persona, std::fstream& archivo)
+{
+    for (size_t i = 0; i < persona.size(); i++)
+    {
+        archivo.seekp(i * sizeof(persona[i]), std::ios::beg);
+        persona[i].pageID = i;
+        archivo.write(reinterpret_cast<char*>(&persona[i]), sizeof(persona[i]));
+    }
+};
+
+void read(int id, std::fstream& archivo)
+{
+    Personita p;
+    archivo.seekg(id * sizeof(p), std::ios::beg);
+    archivo.read(reinterpret_cast<char*>(&p), sizeof(p));
+    if (archivo.gcount() == sizeof(Personita))
+    {
+        std::cout << "Nombre: " << p.name << std::endl;
+        std::cout << "Edad: " << p.edad << std::endl;
+        std::cout << "DNI: " << p.dni << std::endl;
+    }
+    else
+    {
+        std::cerr << "Error leyendo en el índice " << id << std::endl;
+    }
+};
+
+int main()
+{
+    BTree t(4); // Un árbol B con grado mínimo 4
+
+    Personita persona1("Juan", 30, "12345678", 0);
+    Personita persona2("Maroa", 25, "87654321", 1);
+    Personita persona3("Karin", 45, "10192922", 2);
+    Personita persona4("XD", 45, "73452824", 3);
+    Personita persona5("QWASD", 45, "23451824", 4);
+    Personita persona6("ADLQUNWI", 45, "01454824", 5);
+    Personita persona7("QWE", 45, "75428102", 6);
+    Personita persona8("QWEQWE", 45, "71454824", 7);
+    Personita persona9("QWEQWE", 45, "79354221", 8);
+    Personita persona10("QWEQWE", 45, "72250201", 8);
+
+    t.Insert(persona1.dni, persona1.pageID);
+    t.Insert(persona2.dni, persona2.pageID);
+    t.Insert(persona3.dni, persona3.pageID);
+    t.Insert(persona4.dni, persona4.pageID);
+    t.Insert(persona5.dni, persona5.pageID);
+    t.Insert(persona6.dni, persona6.pageID);
+    t.Insert(persona7.dni, persona7.pageID);
+    t.Insert(persona8.dni, persona8.pageID);
+    t.Insert(persona9.dni, persona9.pageID);
+    t.Insert(persona10.dni, persona10.pageID);
+
+    std::cout << "El recorrido del arbol construido es:" << std::endl;
+    t.PrintBTree();
+    //std::cout << std::endl;
+    
+    std::vector<std::string> dnis; // this is the "key"
+
+    char dni1[9];
+    std::memset(dni1, 0, sizeof(dni1)); // Inicializar dni con ceros
+    std::strncpy(dni1, "73452824", sizeof(dni1));    // Copiar el DNI asegurando el terminador nulo
+    dni1[sizeof(dni1) - 1] = '\0'; // Agregar carácter nulo al final
+
+    std::string dniStr(dni1); // Convertir arreglo a std::string
+    dnis.push_back(dniStr);
+    
+
+    char dni2[9];
+    std::memset(dni2, 0, sizeof(dni2)); // Inicializar dni con ceros
+    std::strncpy(dni2, "79354221", sizeof(dni2));    // Copiar el DNI asegurando el terminador nulo
+    dni2[sizeof(dni2) - 1] = '\0'; // Agregar carácter nulo al final
+
+    //dnis.push_back(dni2);
+
+    
+    char dni3[9];
+    std::memset(dni3, 0, sizeof(dni3)); // Inicializar dni con ceros
+    std::strncpy(dni3, dnis[0].c_str(), sizeof(dni3));    // Copiar el DNI asegurando el terminador nulo
+    dni3[sizeof(dni3) - 1] = '\0'; // Agregar carácter nulo al final
+    
+    std::cout << std::endl;
+    std::cout << std::endl;
+    if (std::memcmp(dni1, dni2, 8) > 0) {
+        // dni1 es mayor que dni2
+        std::cout << dni1 << " es mayor que " << dni2 ;
+    }
+    else if (std::memcmp(dni1, dni2, 8) < 0) {
+        // dni1 es menor que dni2
+        std::cout << dni1 << " es menor que " << dni2;
+    }
+    else {
+        // dni1 es igual a dni2
+    }
+    std::cout << "\nwea copiada " << dni3;
+
+    std::cout << "\nwea copiada " << dnis[0];
+
+    dnis[0] = std::string(dni2);
+
+    std::cout << "\nwea copiada " << dnis[0];
+    return 0;
+    
+
+    /*
+    std::fstream archivo("lol.bin", std::ios::binary | std::ios::in | std::ios::out);
+
+    // Verificamos si el archivo se abrió correctamente
+    if (!archivo)
+    {
+        std::cerr << "Error al abrir el archivo.\n";
+        return 1;
+    }
+
+    
+    Personita persona1("Juan", 30, "12345678", 0);
+    Personita persona2("Maroa", 25, "87654321", 1);
+    Personita persona3("Karin", 45, "10192922", 2);
+
+    std::vector<Personita> personas;
+    personas.push_back(persona1);
+    personas.push_back(persona2);
+    personas.push_back(persona3);
+    
+
+    //write(personas, archivo);
+    read(personas[2].id, archivo);
+
+    archivo.close();
+
+    return 0;
+    */
+}
+
+/*
+#define _CRT_SECURE_NO_WARNINGS
 #include "BTreeDisk.h"
 #include "DiskPageManager.h"
 #include <iostream>
@@ -243,7 +387,7 @@ int main()
     double tiempo_segundos = tiempo.count();
     std::cout << "\nEl tiempo de ejecucion es: " << tiempo_segundos << " segundos";
     std::cout << "\nfinished xd\n";
-    */
+    
 
 
     
@@ -301,8 +445,9 @@ int main()
     std::cout << "\nfinished xd\n";
     
     //std::cout << "Hello World!\n";
-    */
+    
     
     return 0;
 
 }
+*/
