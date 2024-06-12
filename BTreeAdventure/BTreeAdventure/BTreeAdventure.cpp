@@ -10,33 +10,6 @@
 #include "Person.h"
 #include "BTree.h"
 
-void write(std::vector<Personita>& persona, std::fstream& archivo)
-{
-    for (size_t i = 0; i < persona.size(); i++)
-    {
-        archivo.seekp(i * sizeof(persona[i]), std::ios::beg);
-        persona[i].pageID = i;
-        archivo.write(reinterpret_cast<char*>(&persona[i]), sizeof(persona[i]));
-    }
-};
-
-void read(int id, std::fstream& archivo)
-{
-    Personita p;
-    archivo.seekg(id * sizeof(p), std::ios::beg);
-    archivo.read(reinterpret_cast<char*>(&p), sizeof(p));
-    if (archivo.gcount() == sizeof(Personita))
-    {
-        std::cout << "Nombre: " << p.name << std::endl;
-        std::cout << "Edad: " << p.edad << std::endl;
-        std::cout << "DNI: " << p.dni << std::endl;
-    }
-    else
-    {
-        std::cerr << "Error leyendo en el índice " << id << std::endl;
-    }
-};
-
 int main()
 {
     BTree t(4); // Un árbol B con grado mínimo 4
@@ -46,68 +19,30 @@ int main()
 
     /*
     // Agregar un nuevo registro
-    Personita newPerson("JULIAN", 24, NewDNI, -1); // -1 para indicar que aún no tiene pageID
+    Personita newPerson("JESUS XD", 24, "71454823", -1); // -1 para indicar que aún no tiene pageID
     pageManager.AddNewPerson(t, newPerson);
     */
-
+    
     std::cout << "El recorrido del arbol construido es:" << std::endl;
     t.PrintBTree();
-
-    // yo - eliminar
-    int pageid = t.GetPageIDByDNI("71454824");
+    
+    // obtener el page ID de un DNI
+    int pageid = t.GetPageIDByDNI("71454823");
 
     if (pageid >= 0) {
         Personita p1 = pageManager.ReadGetObjectByPageID(pageid);
         std::cout << "Nombre: " << p1.name << std::endl;
         std::cout << "Edad: " << p1.edad << std::endl;
         std::cout << "DNI: " << p1.dni << std::endl;
+        //std::cout << "SE VA A ELIMINAR !!!! " << "\n";
+        //pageManager.DeleteRecordFromDisk(pageid, t);
     }
-
-    t.Remove("71454824");
-    std::cout << "El recorrido del árbol después de eliminar un registro es:" << std::endl;
-    t.PrintBTree();
-        
-    /*
-    // new person
-    int pageid2 = t.GetPageIDByDNI("21354829");
-    if (pageid2 >= 0) {
-        Personita p1 = pageManager.ReadGetObjectByPageID(pageid2);
-        std::cout << "Nombre: " << p1.name << std::endl;
-        std::cout << "Edad: " << p1.edad << std::endl;
-        std::cout << "DNI: " << p1.dni << std::endl;
-    }
-    */
-        
-    return 0;
-    
-    /*
-    std::fstream archivo("lol.bin", std::ios::binary | std::ios::in | std::ios::out);
-
-    // Verificamos si el archivo se abrió correctamente
-    if (!archivo)
+    else 
     {
-        std::cerr << "Error al abrir el archivo.\n";
-        return 1;
+        std::cout << "No existe p " << "\n";
     }
-
-    
-    Personita persona1("Juan", 30, "12345678", 0);
-    Personita persona2("Maroa", 25, "87654321", 1);
-    Personita persona3("Karin", 45, "10192922", 2);
-
-    std::vector<Personita> personas;
-    personas.push_back(persona1);
-    personas.push_back(persona2);
-    personas.push_back(persona3);
-    
-
-    //write(personas, archivo);
-    read(personas[2].id, archivo);
-
-    archivo.close();
-
+        
     return 0;
-    */
 }
 
 /*

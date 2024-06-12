@@ -105,6 +105,67 @@ public:
         write(reinterpret_cast<char*>(&person), sizeof(person));
     }
 
+    void DeleteRecordFromDisk(long pageID, BTree& tree) {
+        // Leer el registro del archivo para obtener el DNI antes de eliminarlo
+        Personita personToRemove = ReadGetObjectByPageID(pageID);
+        std::string dniToRemove = personToRemove.dni;
+
+        // Nombre del archivo temporal
+        const char* tempFilename = "temp.bin";
+
+        // Crear archivo temporal
+        std::fstream tempFile(tempFilename, std::ios::out | std::ios::binary);
+        if (!tempFile.is_open()) {
+            std::cerr << "Error al abrir el archivo temporal." << std::endl;
+            return;
+        }
+
+        // Leer registros del archivo original y copiar los que no se van a eliminar
+        clear();
+        seekg(0, std::ios::beg); // Mover el puntero al inicio del archivo
+        Personita person;
+        long currentID = 0;
+
+        while (read(reinterpret_cast<char*>(&person), sizeof(Personita))) {
+            if (currentID != pageID) {
+                tempFile.write(reinterpret_cast<char*>(&person), sizeof(person));
+            }
+            currentID++;
+        }
+
+        if (fail() && !eof()) {
+            std::cerr << "Error al leer el archivo original." << std::endl;
+            tempFile.close();
+            std::remove(tempFilename); // Eliminar el archivo temporal en caso de error
+            return;
+        }
+
+        // Cerrar archivos
+        tempFile.close();
+        close();
+
+        // Eliminar el archivo original y renombrar el archivo temporal
+        if (std::remove(filename) != 0) {
+            std::cerr << "Error al eliminar el archivo original." << std::endl;
+            std::remove(tempFilename); // Eliminar el archivo temporal si falla
+            return;
+        }
+
+        if (std::rename(tempFilename, filename) != 0) {
+            std::cerr << "Error al renombrar el archivo temporal." << std::endl;
+            return;
+        }
+
+        // Reabrir el archivo original como binario
+        open(filename, std::ios::in | std::ios::out | std::ios::binary);
+        if (!is_open()) {
+            std::cerr << "Error al reabrir el archivo: " << filename << std::endl;
+        }
+
+        // Eliminar el registro del B-Tree utilizando el DNI obtenido
+        tree.Remove(dniToRemove.c_str());
+    }
+
     /* page manager Version 1.0.0 methods
     template <typename T>
     T readPage(const long& n, const T& object)
