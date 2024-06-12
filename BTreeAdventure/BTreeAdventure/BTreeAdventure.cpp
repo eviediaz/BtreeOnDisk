@@ -53,8 +53,8 @@ int main()
     std::cout << "El recorrido del arbol construido es:" << std::endl;
     t.PrintBTree();
 
-    // andres
-    int pageid = t.GetPageIDByDNI("72250201");
+    // yo - eliminar
+    int pageid = t.GetPageIDByDNI("71454824");
 
     if (pageid >= 0) {
         Personita p1 = pageManager.ReadGetObjectByPageID(pageid);
@@ -62,7 +62,12 @@ int main()
         std::cout << "Edad: " << p1.edad << std::endl;
         std::cout << "DNI: " << p1.dni << std::endl;
     }
+
+    t.Remove("71454824");
+    std::cout << "El recorrido del árbol después de eliminar un registro es:" << std::endl;
+    t.PrintBTree();
         
+    /*
     // new person
     int pageid2 = t.GetPageIDByDNI("21354829");
     if (pageid2 >= 0) {
@@ -71,6 +76,7 @@ int main()
         std::cout << "Edad: " << p1.edad << std::endl;
         std::cout << "DNI: " << p1.dni << std::endl;
     }
+    */
         
     return 0;
     

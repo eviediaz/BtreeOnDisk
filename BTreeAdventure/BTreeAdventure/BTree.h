@@ -69,6 +69,26 @@ public:
         return root->search(dni);
     }
 
+    void Remove(const char* dni) {
+        if (!root) {
+            std::cout << "El arbol esta vacío. No se puede eliminar la clave: " << dni << std::endl;
+            return;
+        }
+
+        root->Remove(dni);
+
+        if (root->actualNumberKeys == 0) {
+            BTreeNode* tmp = root;
+            if (root->isLeaf) {
+                root = nullptr;
+            }
+            else {
+                root = root->children[0];
+            }
+            delete tmp;
+        }
+    }
+
     void TraverseTree() 
     {
         if (root != nullptr) root->Traverse();
