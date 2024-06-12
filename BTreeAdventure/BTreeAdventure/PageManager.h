@@ -2,6 +2,7 @@
 #include <vector>
 #include <fstream>
 #include <iostream>
+#include "BTree.h"
 #include "Person.h"
 
 class PageManager : protected std::fstream // FStream methods and attributes are going to be protected
@@ -90,6 +91,26 @@ public:
         }
 
         return persons;
+    }
+
+    void AddNewPerson(BTree& tree, Personita& person) {
+        // Verificar el tamaño del archivo para determinar el nuevo pageID
+        long newPageID = getFileSize() / sizeof(Personita);
+
+        // Asignar el nuevo pageID a la persona
+        person.pageID = newPageID;
+
+        // Escribir el nuevo registro en el archivo
+        clear();
+        seekp(newPageID * sizeof(Personita), std::ios::beg);
+        write(reinterpret_cast<char*>(&person), sizeof(person));
+        if (!good()) {
+            std::cerr << "Error al escribir el nuevo registro en el archivo." << std::endl;
+            return;
+        }
+
+        // Insertar la nueva persona en el B-Tree
+        tree.Insert(person.dni, person.pageID);
     }
 
     template <typename T>

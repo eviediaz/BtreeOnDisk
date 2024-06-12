@@ -78,6 +78,10 @@ int main()
         t.Insert(person.dni, person.pageID);
     }
 
+    // Agregar un nuevo registro
+    Personita newPerson("John Doe", 40, "91427236", -1); // -1 para indicar que aún no tiene pageID
+    pageManager.AddNewPerson(t, newPerson);
+
     std::cout << "El recorrido del arbol construido es:" << std::endl;
     t.PrintBTree();
 
@@ -86,6 +90,15 @@ int main()
 
     if (pageid >= 0) {
         Personita p1 = pageManager.ReadGetObjectByPageID(pageid);
+        std::cout << "Nombre: " << p1.name << std::endl;
+        std::cout << "Edad: " << p1.edad << std::endl;
+        std::cout << "DNI: " << p1.dni << std::endl;
+    }
+
+    // new person
+    int pageid2 = t.GetPageIDByDNI("91427236");
+    if (pageid2 >= 0) {
+        Personita p1 = pageManager.ReadGetObjectByPageID(pageid2);
         std::cout << "Nombre: " << p1.name << std::endl;
         std::cout << "Edad: " << p1.edad << std::endl;
         std::cout << "DNI: " << p1.dni << std::endl;
