@@ -34,49 +34,20 @@ public:
             // a) Encuentra la ubicación de la nueva clave a insertar
             // b) Mueve todas las claves mayores un lugar hacia adelante
 
-            char currentDNI[9];
-            std::memset(currentDNI, 0, sizeof(currentDNI)); // Inicializar dni con ceros
-            std::strncpy(currentDNI, dnis[i].c_str(), sizeof(currentDNI));    // Copiar el DNI asegurando el terminador nulo
-            currentDNI[sizeof(currentDNI) - 1] = '\0'; // Agregar carácter nulo al final
-
-            char dniToInsert[9];
-            std::memset(dniToInsert, 0, sizeof(dniToInsert)); // Inicializar dni con ceros
-            std::strncpy(dniToInsert, dni, sizeof(dniToInsert));    // Copiar el DNI asegurando el terminador nulo
-            dniToInsert[sizeof(dniToInsert) - 1] = '\0'; // Agregar carácter nulo al final
-
-            bool isLowerThanKey = std::memcmp(currentDNI, dniToInsert, 8) > 0;
-
-            while (i >= 0 && isLowerThanKey) {
+            while (i >= 0 && (std::memcmp(dnis[i].c_str(), dni, 8) > 0)) {
                 dnis[i + 1] = dnis[i];
                 pagesID[i + 1] = pagesID[i];
                 i--;
             }
 
             // Inserta la nueva clave en la ubicación encontrada
-            dnis[i + 1] = std::string(dniToInsert);
+            dnis[i + 1] = std::string(dni);
             pagesID[i + 1] = pageID;
             actualNumberKeys = actualNumberKeys + 1;
         }
         else { // Si este nodo no es hoja
-            char currentDNI[9];
-            std::memset(currentDNI, 0, sizeof(currentDNI)); // Inicializar dni con ceros
-            std::strncpy(currentDNI, dnis[i].c_str(), sizeof(currentDNI));    // Copiar el DNI asegurando el terminador nulo
-            currentDNI[sizeof(currentDNI) - 1] = '\0'; // Agregar carácter nulo al final
-
-            char currentNextDNI[9];
-            std::memset(currentNextDNI, 0, sizeof(currentNextDNI)); // Inicializar dni con ceros
-            std::strncpy(currentNextDNI, dnis[i+1].c_str(), sizeof(currentNextDNI));    // Copiar el DNI asegurando el terminador nulo
-            currentNextDNI[sizeof(currentNextDNI) - 1] = '\0'; // Agregar carácter nulo al final
-
-            char dniToInsert[9];
-            std::memset(dniToInsert, 0, sizeof(dniToInsert)); // Inicializar dni con ceros
-            std::strncpy(dniToInsert, dni, sizeof(dniToInsert));    // Copiar el DNI asegurando el terminador nulo
-            dniToInsert[sizeof(dniToInsert) - 1] = '\0'; // Agregar carácter nulo al final
-
-            bool isGreaterThanKey = std::memcmp(currentDNI, dniToInsert, 8) > 0;
-            bool isLowerThanKey = std::memcmp(currentNextDNI, dniToInsert, 8) < 0;
             // Encuentra el hijo que va a tener la nueva clave
-            while (i >= 0 && isGreaterThanKey) i--;
+            while (i >= 0 && (std::memcmp(dnis[i].c_str(), dni, 8) > 0)) i--;
 
             // Ver si el hijo encontrado está lleno
             if (children[i + 1]->actualNumberKeys == 2 * minimunDegree - 1) {
@@ -85,9 +56,9 @@ public:
 
                 // Después de dividir, la clave del medio de children[i] sube y children[i]
                 // se divide en dos. Ver cuál de los dos va a tener la nueva clave
-                if (isLowerThanKey) i++;
+                if (std::memcmp(dnis[i + 1].c_str(), dni, 8) < 0) i++;
             }
-            children[i + 1]->InsertNonFull(dniToInsert, pageID);
+            children[i + 1]->InsertNonFull(dni, pageID);
         }
         
     }

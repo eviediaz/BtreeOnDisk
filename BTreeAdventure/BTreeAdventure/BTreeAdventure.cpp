@@ -41,16 +41,41 @@ int main()
 {
     BTree t(4); // Un árbol B con grado mínimo 4
 
+    std::fstream archivo("lol.bin", std::ios::binary | std::ios::in | std::ios::out);
+
+    // Verificamos si el archivo se abrió correctamente
+    if (!archivo)
+    {
+        std::cerr << "Error al abrir el archivo.\n";
+        return 1;
+    }
+    std::vector<Personita> personas;
+
     Personita persona1("Juan", 30, "12345678", 0);
     Personita persona2("Maroa", 25, "87654321", 1);
     Personita persona3("Karin", 45, "10192922", 2);
-    Personita persona4("XD", 45, "73452824", 3);
-    Personita persona5("QWASD", 45, "23451824", 4);
-    Personita persona6("ADLQUNWI", 45, "01454824", 5);
+    Personita persona4("DENNIS", 45, "73452824", 3);
+    Personita persona5("MMAURICI", 45, "23451824", 4);
+    Personita persona6("PIERO", 45, "01454824", 5);
     Personita persona7("QWE", 45, "75428102", 6);
-    Personita persona8("QWEQWE", 45, "71454824", 7);
-    Personita persona9("QWEQWE", 45, "79354221", 8);
-    Personita persona10("QWEQWE", 45, "72250201", 8);
+    Personita persona8("YO", 45, "71454824", 7);
+    Personita persona9("EVIE", 45, "79354221", 8);
+    Personita persona10("ANDRES", 45, "72250201", 8);
+
+    personas.push_back(persona1);
+    personas.push_back(persona2);
+    personas.push_back(persona3);
+    personas.push_back(persona4);
+    personas.push_back(persona5);
+    personas.push_back(persona6);
+    personas.push_back(persona7);
+    personas.push_back(persona8);
+    personas.push_back(persona9);
+    personas.push_back(persona10);
+
+    //write(personas, archivo);
+    read(personas[6].pageID, archivo);
+    archivo.close();
 
     t.Insert(persona1.dni, persona1.pageID);
     t.Insert(persona2.dni, persona2.pageID);
@@ -67,6 +92,7 @@ int main()
     t.PrintBTree();
     //std::cout << std::endl;
     
+    /*
     std::vector<std::string> dnis; // this is the "key"
 
     char dni1[9];
@@ -111,9 +137,9 @@ int main()
     dnis[0] = std::string(dni2);
 
     std::cout << "\nwea copiada " << dnis[0];
+    */
     return 0;
     
-
     /*
     std::fstream archivo("lol.bin", std::ios::binary | std::ios::in | std::ios::out);
 

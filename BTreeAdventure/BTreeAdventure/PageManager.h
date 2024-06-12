@@ -2,6 +2,7 @@
 #include <vector>
 #include <fstream>
 #include <iostream>
+#include "Person.h"
 
 class PageManager : protected std::fstream // FStream methods and attributes are going to be protected
 {
@@ -10,7 +11,7 @@ public:
     // Constructor
     PageManager(const char* filename)
     {
-        filename = filename;
+        this->filename = filename;
         open(filename, std::ios::in | std::ios::out | std::ios::binary);
         if (!is_open()) {
             std::cerr << "Error al abrir el archivo: " << filename << std::endl;
@@ -32,6 +33,33 @@ public:
         seekg(0, std::ios::end);
         return tellg();
     }
+
+    Personita ReadGetObjectByPageID(const long& pageID)
+    {
+        Personita person;
+        clear();
+        seekg(pageID * sizeof(person), std::ios::beg);
+        read(reinterpret_cast<char*>(&person), sizeof(person));
+        if (!good()) {
+            std::cerr << "Error al leer page: " << pageID << std::endl;
+        }
+        return person;
+    };
+
+    template <typename T>
+    void WriteObjectsPageID(std::vector<T>& objectsVector)
+    {
+        clear();
+        for (size_t i = 0; i < objectsVector.size(); i++)
+        {
+            seekp(i * sizeof(objectsVector[i]), std::ios::beg);
+            objectsVector[i].pageID = i;
+            write(reinterpret_cast<char*>(&objectsVector[i]), sizeof(objectsVector[i]));
+            if (!good()) {
+                std::cerr << "Error al escribir en page: " << i << std::endl;
+            }
+        }
+    };
 
     template <typename T>
     T readPage(const long& n, const T& object)
