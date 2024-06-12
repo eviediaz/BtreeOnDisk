@@ -42,45 +42,13 @@ int main()
     BTree t(4); // Un árbol B con grado mínimo 4
     PageManager pageManager("lol.bin");
 
-    std::vector<Personita> personas = pageManager.LoadDataToVector();
+    pageManager.ReadFileAndLoadToBtree(t);
 
     /*
-    Personita persona1("Juan", 30, "12345678", 0);
-    Personita persona2("Maroa", 25, "87654321", 1);
-    Personita persona3("Karin", 45, "10192922", 2);
-    Personita persona4("DENNIS", 45, "73452824", 3);
-    Personita persona5("MMAURICI", 45, "23451824", 4);
-    Personita persona6("PIERO", 45, "01454824", 5);
-    Personita persona7("QWE", 45, "75428102", 6);
-    Personita persona8("YO", 45, "71454824", 7);
-    Personita persona9("EVIE", 45, "79354221", 8);
-    Personita persona10("ANDRES", 45, "72250201", 9);
-    Personita persona11("ISSAEL", 45, "31442804", 10);
-    Personita persona12("EDUARDO", 45, "09434724", 11);
-
-    personas.push_back(persona1);
-    personas.push_back(persona2);
-    personas.push_back(persona3);
-    personas.push_back(persona4);
-    personas.push_back(persona5);
-    personas.push_back(persona6);
-    personas.push_back(persona7);
-    personas.push_back(persona8);
-    personas.push_back(persona9);
-    personas.push_back(persona10);
-    personas.push_back(persona11);
-    personas.push_back(persona12);
-    */
-
-    //pageManager.WriteObjectsPageID(personas);
-
-    for (const auto& person : personas) {
-        t.Insert(person.dni, person.pageID);
-    }
-
     // Agregar un nuevo registro
-    Personita newPerson("DANIEL DIAZ", 24, "81427236", -1); // -1 para indicar que aún no tiene pageID
+    Personita newPerson("JULIAN", 24, NewDNI, -1); // -1 para indicar que aún no tiene pageID
     pageManager.AddNewPerson(t, newPerson);
+    */
 
     std::cout << "El recorrido del arbol construido es:" << std::endl;
     t.PrintBTree();
@@ -94,16 +62,16 @@ int main()
         std::cout << "Edad: " << p1.edad << std::endl;
         std::cout << "DNI: " << p1.dni << std::endl;
     }
-
+        
     // new person
-    int pageid2 = t.GetPageIDByDNI("81427236");
+    int pageid2 = t.GetPageIDByDNI("21354829");
     if (pageid2 >= 0) {
         Personita p1 = pageManager.ReadGetObjectByPageID(pageid2);
         std::cout << "Nombre: " << p1.name << std::endl;
         std::cout << "Edad: " << p1.edad << std::endl;
         std::cout << "DNI: " << p1.dni << std::endl;
     }
-    
+        
     return 0;
     
     /*

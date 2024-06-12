@@ -32,7 +32,7 @@ public:
 
     /// @brief Get the size of a the file
     /// @return the size of a file
-    long getFileSize() {
+    long GetFileSize() {
         clear();
         seekg(0, std::ios::end);
         return tellg();
@@ -50,60 +50,44 @@ public:
         return person;
     };
 
-    template <typename T>
-    void WriteObjectsPageID(std::vector<T>& objectsVector)
-    {
-        clear();
-        for (size_t i = 0; i < objectsVector.size(); i++)
-        {
-            seekp(i * sizeof(objectsVector[i]), std::ios::beg);
-            objectsVector[i].pageID = i;
-            write(reinterpret_cast<char*>(&objectsVector[i]), sizeof(objectsVector[i]));
-            if (!good()) {
-                std::cerr << "Error al escribir en page: " << i << std::endl;
-            }
-        }
-    };
-
-    std::vector<Personita> LoadDataToVector() {
-        std::vector<Personita> persons;
+    void ReadFileAndLoadToBtree(BTree& tree) {
         if (!is_open()) {
             std::cerr << "Error: el archivo no esta abierto." << std::endl;
-            return persons;
         }
 
         clear(); // Limpiar cualquier bandera de error anterior
         seekg(0, std::ios::beg); // Mover el puntero al inicio del archivo
 
+        LoadDataToBTree(tree);
+
+        if (fail() && !eof()) {
+            std::cerr << "Error al leer el archivo." << std::endl;
+        }
+    }
+
+    void LoadDataToBTree(BTree& tree)
+    {
         Personita person;
         while (read(reinterpret_cast<char*>(&person), sizeof(Personita))) {
             if (good()) {
-                persons.push_back(person);
+                tree.Insert(person.dni, person.pageID);
             }
             else {
                 std::cerr << "Error al leer una entrada en el archivo." << std::endl;
                 break;
             }
         }
-
-        if (fail() && !eof()) {
-            std::cerr << "Error al leer el archivo." << std::endl;
-        }
-
-        return persons;
     }
 
     void AddNewPerson(BTree& tree, Personita& person) {
         // Verificar el tamaño del archivo para determinar el nuevo pageID
-        long newPageID = getFileSize() / sizeof(Personita);
+        long newPageID = GetFileSize() / sizeof(Personita);
 
         // Asignar el nuevo pageID a la persona
         person.pageID = newPageID;
 
-        // Escribir el nuevo registro en el archivo
-        clear();
-        seekp(newPageID * sizeof(Personita), std::ios::beg);
-        write(reinterpret_cast<char*>(&person), sizeof(person));
+        WriteObjectInDisk(newPageID, person);
+
         if (!good()) {
             std::cerr << "Error al escribir el nuevo registro en el archivo." << std::endl;
             return;
@@ -113,6 +97,15 @@ public:
         tree.Insert(person.dni, person.pageID);
     }
 
+    void WriteObjectInDisk(long newPageID, Personita& person)
+    {
+        // Escribir el nuevo registro en el archivo
+        clear();
+        seekp(newPageID * sizeof(Personita), std::ios::beg);
+        write(reinterpret_cast<char*>(&person), sizeof(person));
+    }
+
+    /* page manager Version 1.0.0 methods
     template <typename T>
     T readPage(const long& n, const T& object)
     {
@@ -140,6 +133,7 @@ public:
             }
         }
     }
+    */
 
 private:
     // Private member variable to hold the value
