@@ -72,18 +72,9 @@ int main()
 
     pageManager.WriteObjectsPageID(personas);
 
-    t.Insert(persona1.dni, persona1.pageID);
-    t.Insert(persona2.dni, persona2.pageID);
-    t.Insert(persona3.dni, persona3.pageID);
-    t.Insert(persona4.dni, persona4.pageID);
-    t.Insert(persona5.dni, persona5.pageID);
-    t.Insert(persona6.dni, persona6.pageID);
-    t.Insert(persona7.dni, persona7.pageID);
-    t.Insert(persona8.dni, persona8.pageID);
-    t.Insert(persona9.dni, persona9.pageID);
-    t.Insert(persona10.dni, persona10.pageID);
-    t.Insert(persona11.dni, persona11.pageID);
-    t.Insert(persona12.dni, persona12.pageID);
+    for (const auto& person : personas) {
+        t.Insert(person.dni, person.pageID);
+    }
 
     std::cout << "El recorrido del arbol construido es:" << std::endl;
     t.PrintBTree();
