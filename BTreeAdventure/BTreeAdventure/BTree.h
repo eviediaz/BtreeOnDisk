@@ -16,7 +16,9 @@ public:
         if (root == nullptr) {
             // Asigna memoria para la raíz
             root = new BTreeNode(minimunDegree, true);
-            root->dnis[0] = dniToInsert;  // Inserta la clave
+            std::memcpy(root->dnis[0].data(), dniToInsert, 8);
+            root->dnis[0][8] = '\0';  // Inserta la clave
+            root->pagesID[0] = pageID;
             root->actualNumberKeys = 1;  // Actualiza el número de claves en la raíz
         }
         else { // Si el árbol no está vacío
@@ -34,20 +36,12 @@ public:
                 // La nueva raíz tiene dos hijos ahora. Decide cuál de los
                 // dos hijos va a tener la nueva clave
                 int i = 0;
+                char currentDNI[9] = { 0 };
+                std::memcpy(currentDNI, s->dnis[0].data(), 8);
+                char dniToInsertTemp[9] = { 0 };
+                std::memcpy(dniToInsertTemp, dniToInsert, 8);
 
-                char currentDNI[9];
-                std::memset(currentDNI, 0, sizeof(currentDNI)); // Inicializar dni con ceros
-                std::strncpy(currentDNI, s->dnis[0].c_str(), sizeof(currentDNI));    // Copiar el DNI asegurando el terminador nulo
-                currentDNI[sizeof(currentDNI) - 1] = '\0'; // Agregar carácter nulo al final
-
-                char dniToInsertTemp[9];
-                std::memset(dniToInsertTemp, 0, sizeof(dniToInsertTemp)); // Inicializar dni con ceros
-                std::strncpy(dniToInsertTemp, dniToInsert, sizeof(dniToInsertTemp));    // Copiar el DNI asegurando el terminador nulo
-                dniToInsertTemp[sizeof(dniToInsertTemp) - 1] = '\0'; // Agregar carácter nulo al final
-
-                bool isLowerThanKey = std::memcmp(currentDNI, dniToInsertTemp, 8) < 0;
-
-                if (isLowerThanKey) i++;
+                if ((std::memcmp(currentDNI, dniToInsertTemp, 8) < 0)) i++;
                 s->children[i]->InsertNonFull(dniToInsert, pageID);
 
                 // Cambia la raíz

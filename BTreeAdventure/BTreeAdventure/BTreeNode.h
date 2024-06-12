@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <array>
 #include <cstring>
 #include <string>
 #include <algorithm> // para std::lower_bound y std::upper_bound
@@ -9,7 +10,7 @@ class BTreeNode
 public:
     int minimunDegree;
     std::vector<int> pagesID;
-    std::vector<std::string> dnis; // this is the "key"
+    std::vector<std::array<char, 9>> dnis; // this is the "key"
     std::vector<BTreeNode*> children;
     int actualNumberKeys;
     bool isLeaf;
@@ -34,20 +35,20 @@ public:
             // a) Encuentra la ubicación de la nueva clave a insertar
             // b) Mueve todas las claves mayores un lugar hacia adelante
 
-            while (i >= 0 && (std::memcmp(dnis[i].c_str(), dni, 8) > 0)) {
+            while (i >= 0 && (std::memcmp(dnis[i].data(), dni, 8) > 0)) {
                 dnis[i + 1] = dnis[i];
                 pagesID[i + 1] = pagesID[i];
                 i--;
             }
 
             // Inserta la nueva clave en la ubicación encontrada
-            dnis[i + 1] = std::string(dni);
+            std::memcpy(dnis[i + 1].data(), dni, 8);
             pagesID[i + 1] = pageID;
             actualNumberKeys = actualNumberKeys + 1;
         }
         else { // Si este nodo no es hoja
             // Encuentra el hijo que va a tener la nueva clave
-            while (i >= 0 && (std::memcmp(dnis[i].c_str(), dni, 8) > 0)) i--;
+            while (i >= 0 && (std::memcmp(dnis[i].data(), dni, 8) > 0)) i--;
 
             // Ver si el hijo encontrado está lleno
             if (children[i + 1]->actualNumberKeys == 2 * minimunDegree - 1) {
@@ -56,7 +57,7 @@ public:
 
                 // Después de dividir, la clave del medio de children[i] sube y children[i]
                 // se divide en dos. Ver cuál de los dos va a tener la nueva clave
-                if (std::memcmp(dnis[i + 1].c_str(), dni, 8) < 0) i++;
+                if (std::memcmp(dnis[i + 1].data(), dni, 8) < 0) i++;
             }
             children[i + 1]->InsertNonFull(dni, pageID);
         }
@@ -113,12 +114,12 @@ public:
     int search(const char* dni) {
         // Encuentra la primera clave mayor o igual a dni
         int i = 0;
-        while (i < actualNumberKeys && (std::memcmp(dnis[i].c_str(), dni, 8) < 0)) {
+        while (i < actualNumberKeys && (std::memcmp(dnis[i].data(), dni, 8) < 0)) {
             i++;
         }
 
         // Si la clave se encuentra en este nodo, devuelve su page ID
-        if (i < actualNumberKeys && std::memcmp(dnis[i].c_str(), dni, 8) == 0) {
+        if (i < actualNumberKeys && std::memcmp(dnis[i].data(), dni, 8) == 0) {
             return pagesID[i];
         }
 
@@ -134,11 +135,11 @@ public:
 
     void Remove(const char* dni) {
         int idx = 0;
-        while (idx < actualNumberKeys && (std::memcmp(dnis[idx].c_str(), dni, 8) < 0)) {
+        while (idx < actualNumberKeys && (std::memcmp(dnis[idx].data(), dni, 8) < 0)) {
             idx++;
         }
 
-        if (idx < actualNumberKeys && std::memcmp(dnis[idx].c_str(), dni, 8) == 0) {
+        if (idx < actualNumberKeys && std::memcmp(dnis[idx].data(), dni, 8) == 0) {
             if (isLeaf) {
                 RemoveFromLeaf(idx);
             }
@@ -172,7 +173,7 @@ public:
             // Si este nodo no es hoja, entonces antes de imprimir la clave[i],
             // recorre el subárbol enraizado con el hijo children[i].
             if (!isLeaf) children[i]->Traverse();
-            std::cout << " " << dnis[i] << " -page id: " << pagesID[i] << std::endl;
+            std::cout << " " << dnis[i].data() << " -page id: " << pagesID[i] << std::endl;
         }
 
         // Imprime el subárbol enraizado con el último hijo
@@ -186,7 +187,7 @@ public:
         // Imprime las claves y los ID de página del nodo
         std::cout << std::string(level * 2, ' ') << "Claves: ";
         for (int i = 0; i < actualNumberKeys; ++i) {
-            std::cout << dnis[i] << " (Pagina ID: " << pagesID[i] << ") ";
+            std::cout << dnis[i].data() << " (Pagina ID: " << pagesID[i] << ") ";
         }
         std::cout << "\n";
 
@@ -208,26 +209,26 @@ private:
     }
 
     void RemoveFromNonLeaf(int idx) {
-        std::string k = dnis[idx];
+        std::array<char, 9> k = dnis[idx];
         if (children[idx]->actualNumberKeys >= minimunDegree) {
-            std::string predDni = GetPredecessor(idx);
+            std::array<char, 9> predDni = GetPredecessor(idx);
             dnis[idx] = predDni;
             pagesID[idx] = children[idx]->GetPredecessorPageID(idx);
-            children[idx]->Remove(predDni.c_str());
+            children[idx]->Remove(predDni.data());
         }
         else if (children[idx + 1]->actualNumberKeys >= minimunDegree) {
-            std::string succDni = GetSuccessor(idx);
+            std::array<char, 9> succDni = GetSuccessor(idx);
             dnis[idx] = succDni;
             pagesID[idx] = children[idx + 1]->GetSuccessorPageID(idx);
-            children[idx + 1]->Remove(succDni.c_str());
+            children[idx + 1]->Remove(succDni.data());
         }
         else {
             Merge(idx);
-            children[idx]->Remove(k.c_str());
+            children[idx]->Remove(k.data());
         }
     }
 
-    std::string GetPredecessor(int idx) {
+    std::array<char, 9> GetPredecessor(int idx) {
         BTreeNode* cur = children[idx];
         while (!cur->isLeaf) {
             cur = cur->children[cur->actualNumberKeys];
@@ -235,7 +236,7 @@ private:
         return cur->dnis[cur->actualNumberKeys - 1];
     }
 
-    std::string GetSuccessor(int idx) {
+    std::array<char, 9> GetSuccessor(int idx) {
         BTreeNode* cur = children[idx + 1];
         while (!cur->isLeaf) {
             cur = cur->children[0];

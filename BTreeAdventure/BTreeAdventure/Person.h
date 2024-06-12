@@ -63,4 +63,22 @@ public:
         std::strncpy(this->civilStatus, civilStatus, sizeof(this->civilStatus) - 1);
         this->civilStatus[sizeof(this->civilStatus) - 1] = '\0';
     }
+
+    void ImprimirDatos() const {
+        std::cout << "DNI: " << dni << std::endl;
+        std::cout << "Nombre: " << name << std::endl;
+        std::cout << "Apellido: " << lastname << std::endl;
+        std::cout << "Edad: " << edad << std::endl;
+        std::cout << "Nacionalidad: " << nationality << std::endl;
+        std::cout << "Lugar de Nacimiento: " << placeOfBirth << std::endl;
+        std::cout << "Dirección: " << address << std::endl;
+        std::cout << "Teléfono: " << phone << std::endl;
+        std::cout << "Correo: " << email << std::endl;
+        std::cout << "Estado Civil: " << civilStatus << std::endl;
+        std::cout << "Page ID: " << pageID << std::endl;
+    }
+
+
+    ~Personita() {
+    }
 };

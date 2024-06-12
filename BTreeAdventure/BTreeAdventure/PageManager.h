@@ -58,7 +58,32 @@ public:
         clear(); // Limpiar cualquier bandera de error anterior
         seekg(0, std::ios::beg); // Mover el puntero al inicio del archivo
 
-        LoadDataToBTree(tree);
+        //LoadDataToBTree(tree);
+        
+        Personita person;
+        const size_t chunkSize = 10000; // Leer 10000 registros a la vez
+        std::vector<Personita> buffer(chunkSize);
+
+        while (true) {
+            read(reinterpret_cast<char*>(buffer.data()), chunkSize * sizeof(Personita));
+            std::streamsize bytesRead = gcount();
+
+            if (bytesRead == 0) {
+                break;
+            }
+
+            size_t recordsRead = bytesRead / sizeof(Personita);
+
+            for (size_t i = 0; i < recordsRead; ++i) {
+                person = buffer[i];
+                tree.Insert(person.dni, person.pageID);
+            }
+
+            if (bytesRead < static_cast<std::streamsize>(chunkSize * sizeof(Personita))) {
+                break;
+            }
+        }
+        
 
         if (fail() && !eof()) {
             std::cerr << "Error al leer el archivo." << std::endl;
