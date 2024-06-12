@@ -59,6 +59,16 @@ public:
         }
     }
 
+    int GetPageIDByDNI(const char* dni) {
+        // Si la raíz es nula, el árbol está vacío, retorna -1
+        if (root == nullptr) {
+            std::cout << "El árbol B esta vacio. Clave " << dni << " no encontrada." << std::endl;
+            return -1;
+        }
+        // Llama al método search de la raíz
+        return root->search(dni);
+    }
+
     void TraverseTree() 
     {
         if (root != nullptr) root->Traverse();

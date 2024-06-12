@@ -88,14 +88,15 @@ int main()
     std::cout << "El recorrido del arbol construido es:" << std::endl;
     t.PrintBTree();
 
-    Personita p1 = pageManager.ReadGetObjectByPageID(10);
-    std::cout << "Nombre: " << p1.name << std::endl;
-    std::cout << "Edad: " << p1.edad << std::endl;
-    std::cout << "DNI: " << p1.dni << std::endl;
-    Personita p2 = pageManager.ReadGetObjectByPageID(9);
-    std::cout << "Nombre: " << p2.name << std::endl;
-    std::cout << "Edad: " << p2.edad << std::endl;
-    std::cout << "DNI: " << p2.dni << std::endl;
+    // andres
+    int pageid = t.GetPageIDByDNI("72250201");
+
+    if (pageid >= 0) {
+        Personita p1 = pageManager.ReadGetObjectByPageID(pageid);
+        std::cout << "Nombre: " << p1.name << std::endl;
+        std::cout << "Edad: " << p1.edad << std::endl;
+        std::cout << "DNI: " << p1.dni << std::endl;
+    }
     //std::cout << std::endl;
     
     /*
