@@ -42,8 +42,9 @@ int main()
     BTree t(4); // Un árbol B con grado mínimo 4
     PageManager pageManager("lol.bin");
 
-    std::vector<Personita> personas;
+    std::vector<Personita> personas = pageManager.LoadDataToVector();
 
+    /*
     Personita persona1("Juan", 30, "12345678", 0);
     Personita persona2("Maroa", 25, "87654321", 1);
     Personita persona3("Karin", 45, "10192922", 2);
@@ -69,8 +70,9 @@ int main()
     personas.push_back(persona10);
     personas.push_back(persona11);
     personas.push_back(persona12);
+    */
 
-    pageManager.WriteObjectsPageID(personas);
+    //pageManager.WriteObjectsPageID(personas);
 
     for (const auto& person : personas) {
         t.Insert(person.dni, person.pageID);
@@ -88,54 +90,7 @@ int main()
         std::cout << "Edad: " << p1.edad << std::endl;
         std::cout << "DNI: " << p1.dni << std::endl;
     }
-    //std::cout << std::endl;
     
-    /*
-    std::vector<std::string> dnis; // this is the "key"
-
-    char dni1[9];
-    std::memset(dni1, 0, sizeof(dni1)); // Inicializar dni con ceros
-    std::strncpy(dni1, "73452824", sizeof(dni1));    // Copiar el DNI asegurando el terminador nulo
-    dni1[sizeof(dni1) - 1] = '\0'; // Agregar carácter nulo al final
-
-    std::string dniStr(dni1); // Convertir arreglo a std::string
-    dnis.push_back(dniStr);
-    
-
-    char dni2[9];
-    std::memset(dni2, 0, sizeof(dni2)); // Inicializar dni con ceros
-    std::strncpy(dni2, "79354221", sizeof(dni2));    // Copiar el DNI asegurando el terminador nulo
-    dni2[sizeof(dni2) - 1] = '\0'; // Agregar carácter nulo al final
-
-    //dnis.push_back(dni2);
-
-    
-    char dni3[9];
-    std::memset(dni3, 0, sizeof(dni3)); // Inicializar dni con ceros
-    std::strncpy(dni3, dnis[0].c_str(), sizeof(dni3));    // Copiar el DNI asegurando el terminador nulo
-    dni3[sizeof(dni3) - 1] = '\0'; // Agregar carácter nulo al final
-    
-    std::cout << std::endl;
-    std::cout << std::endl;
-    if (std::memcmp(dni1, dni2, 8) > 0) {
-        // dni1 es mayor que dni2
-        std::cout << dni1 << " es mayor que " << dni2 ;
-    }
-    else if (std::memcmp(dni1, dni2, 8) < 0) {
-        // dni1 es menor que dni2
-        std::cout << dni1 << " es menor que " << dni2;
-    }
-    else {
-        // dni1 es igual a dni2
-    }
-    std::cout << "\nwea copiada " << dni3;
-
-    std::cout << "\nwea copiada " << dnis[0];
-
-    dnis[0] = std::string(dni2);
-
-    std::cout << "\nwea copiada " << dnis[0];
-    */
     return 0;
     
     /*

@@ -64,6 +64,34 @@ public:
         }
     };
 
+    std::vector<Personita> LoadDataToVector() {
+        std::vector<Personita> persons;
+        if (!is_open()) {
+            std::cerr << "Error: el archivo no esta abierto." << std::endl;
+            return persons;
+        }
+
+        clear(); // Limpiar cualquier bandera de error anterior
+        seekg(0, std::ios::beg); // Mover el puntero al inicio del archivo
+
+        Personita person;
+        while (read(reinterpret_cast<char*>(&person), sizeof(Personita))) {
+            if (good()) {
+                persons.push_back(person);
+            }
+            else {
+                std::cerr << "Error al leer una entrada en el archivo." << std::endl;
+                break;
+            }
+        }
+
+        if (fail() && !eof()) {
+            std::cerr << "Error al leer el archivo." << std::endl;
+        }
+
+        return persons;
+    }
+
     template <typename T>
     T readPage(const long& n, const T& object)
     {
