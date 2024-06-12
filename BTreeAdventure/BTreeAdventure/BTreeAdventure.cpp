@@ -79,7 +79,7 @@ int main()
     }
 
     // Agregar un nuevo registro
-    Personita newPerson("John Doe", 40, "91427236", -1); // -1 para indicar que aún no tiene pageID
+    Personita newPerson("DANIEL DIAZ", 24, "81427236", -1); // -1 para indicar que aún no tiene pageID
     pageManager.AddNewPerson(t, newPerson);
 
     std::cout << "El recorrido del arbol construido es:" << std::endl;
@@ -96,7 +96,7 @@ int main()
     }
 
     // new person
-    int pageid2 = t.GetPageIDByDNI("91427236");
+    int pageid2 = t.GetPageIDByDNI("81427236");
     if (pageid2 >= 0) {
         Personita p1 = pageManager.ReadGetObjectByPageID(pageid2);
         std::cout << "Nombre: " << p1.name << std::endl;
