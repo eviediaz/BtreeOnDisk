@@ -16,6 +16,9 @@ public:
         if (!is_open()) {
             std::cerr << "Error al abrir el archivo: " << filename << std::endl;
         }
+        else {
+            std::cout << "archivo abierto good " << filename << std::endl;
+        }
     };
 
     // Destructor

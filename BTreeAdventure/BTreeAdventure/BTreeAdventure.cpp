@@ -40,15 +40,8 @@ void read(int id, std::fstream& archivo)
 int main()
 {
     BTree t(4); // Un árbol B con grado mínimo 4
+    PageManager pageManager("lol.bin");
 
-    std::fstream archivo("lol.bin", std::ios::binary | std::ios::in | std::ios::out);
-
-    // Verificamos si el archivo se abrió correctamente
-    if (!archivo)
-    {
-        std::cerr << "Error al abrir el archivo.\n";
-        return 1;
-    }
     std::vector<Personita> personas;
 
     Personita persona1("Juan", 30, "12345678", 0);
@@ -60,7 +53,9 @@ int main()
     Personita persona7("QWE", 45, "75428102", 6);
     Personita persona8("YO", 45, "71454824", 7);
     Personita persona9("EVIE", 45, "79354221", 8);
-    Personita persona10("ANDRES", 45, "72250201", 8);
+    Personita persona10("ANDRES", 45, "72250201", 9);
+    Personita persona11("ISSAEL", 45, "31442804", 10);
+    Personita persona12("EDUARDO", 45, "09434724", 11);
 
     personas.push_back(persona1);
     personas.push_back(persona2);
@@ -72,10 +67,10 @@ int main()
     personas.push_back(persona8);
     personas.push_back(persona9);
     personas.push_back(persona10);
+    personas.push_back(persona11);
+    personas.push_back(persona12);
 
-    //write(personas, archivo);
-    read(personas[6].pageID, archivo);
-    archivo.close();
+    pageManager.WriteObjectsPageID(personas);
 
     t.Insert(persona1.dni, persona1.pageID);
     t.Insert(persona2.dni, persona2.pageID);
@@ -87,9 +82,20 @@ int main()
     t.Insert(persona8.dni, persona8.pageID);
     t.Insert(persona9.dni, persona9.pageID);
     t.Insert(persona10.dni, persona10.pageID);
+    t.Insert(persona11.dni, persona11.pageID);
+    t.Insert(persona12.dni, persona12.pageID);
 
     std::cout << "El recorrido del arbol construido es:" << std::endl;
     t.PrintBTree();
+
+    Personita p1 = pageManager.ReadGetObjectByPageID(10);
+    std::cout << "Nombre: " << p1.name << std::endl;
+    std::cout << "Edad: " << p1.edad << std::endl;
+    std::cout << "DNI: " << p1.dni << std::endl;
+    Personita p2 = pageManager.ReadGetObjectByPageID(9);
+    std::cout << "Nombre: " << p2.name << std::endl;
+    std::cout << "Edad: " << p2.edad << std::endl;
+    std::cout << "DNI: " << p2.dni << std::endl;
     //std::cout << std::endl;
     
     /*
