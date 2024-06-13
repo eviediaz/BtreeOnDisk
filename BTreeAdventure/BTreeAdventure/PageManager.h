@@ -1,5 +1,8 @@
 #pragma once
 #include <vector>
+#include <thread>
+#include <mutex>
+#include <condition_variable>
 #include <fstream>
 #include <iostream>
 #include "BTree.h"
@@ -13,8 +16,8 @@ public:
     PageManager(const char* filename)
     {
         this->filename = filename;
-        open(filename, std::ios::in | std::ios::out | std::ios::binary);
-        if (!is_open()) {
+        this->file.open(filename, std::ios::in | std::ios::out | std::ios::binary);
+        if (!this->file.is_open()) {
             std::cerr << "Error al abrir el archivo: " << filename << std::endl;
         }
         else {
@@ -25,17 +28,28 @@ public:
     // Destructor
     ~PageManager()
     {
-        if (is_open()) {
-            close();
+        if (this->file.is_open()) {
+            this->file.close();
         }
     }
 
     /// @brief Get the size of a the file
     /// @return the size of a file
-    long GetFileSize() {
+    std::uintmax_t GetFileSize() {
+        std::ifstream in(this->filename, std::ios::binary | std::ios::ate);
+        if (!in.is_open()) {
+            std::cerr << "Error al abrir el archivo para obtener el tamani." << std::endl;
+            return -1;
+        }
+        std::uintmax_t fileSize = in.tellg();
+        in.close();
+        std::cout << "Tamanio del archivo: " << fileSize << " bytes" << std::endl;
+        return fileSize;
+        /*
         clear();
         seekg(0, std::ios::end);
         return tellg();
+        */
     }
 
     Personita ReadGetObjectByPageID(const long& pageID)
@@ -56,9 +70,7 @@ public:
         }
 
         clear(); // Limpiar cualquier bandera de error anterior
-        seekg(0, std::ios::beg); // Mover el puntero al inicio del archivo
-
-        //LoadDataToBTree(tree);
+        seekg(0, std::ios::beg); // Mover el puntero al inicio del archivo        
         
         Personita person;
         const size_t chunkSize = 10000; // Leer 10000 registros a la vez
@@ -82,8 +94,7 @@ public:
             if (bytesRead < static_cast<std::streamsize>(chunkSize * sizeof(Personita))) {
                 break;
             }
-        }
-        
+        }        
 
         if (fail() && !eof()) {
             std::cerr << "Error al leer el archivo." << std::endl;
@@ -92,15 +103,92 @@ public:
 
     void LoadDataToBTree(BTree& tree)
     {
-        Personita person;
-        while (read(reinterpret_cast<char*>(&person), sizeof(Personita))) {
-            if (good()) {
-                tree.Insert(person.dni, person.pageID);
+        std::uintmax_t fileSize = GetFileSize();
+        if (fileSize <= 0) {
+            std::cerr << "Error: tamanio del archivo no valido." << std::endl;
+            return;
+        }
+
+        size_t numRecords = fileSize / sizeof(Personita);
+        // numRecords / numThreads (4 125 000) -> se insta llena a 10gb
+        // 1 000 000 -> se insta llena a 4gb
+        //   100 000  -> comienza con 400mb aprox hasta 1.3gb
+        size_t chunkSize = 100000;
+        std::cout << "numRecords: " << numRecords << "\n";
+        std::cout << "chunkSize: " << chunkSize << "\n";
+
+        // Number of threads to use for parallel processing
+        unsigned int numThreads = std::thread::hardware_concurrency();
+        std::vector<std::thread> threads;
+        threads.reserve(numThreads);
+        std::atomic<int> activeThreads(0);
+        // esta wea es peligrosa xd
+        //size_t chunkSize = numRecords / numThreads; // Tamanio del bloque a leer en cada iteración
+        std::cout << "threads: " << numThreads << "\n";
+
+
+        // Mutex for thread-safe insertion to BTree
+        std::mutex treeMutex;
+
+        
+        // Lambda function for loading data in each thread
+        auto loadChunk = [&](size_t start, size_t end) {
+            std::ifstream file(this->filename, std::ios::in | std::ios::binary);
+            if (!file.is_open()) {
+                std::cerr << "Error al abrir el archivo en hilo." << std::endl;
+                return;
             }
-            else {
-                std::cerr << "Error al leer una entrada en el archivo." << std::endl;
-                break;
+            else
+            {
+                std::cout << "\narchivo abierto buenardo" << "\n";
             }
+
+            
+            file.seekg(start * sizeof(Personita), std::ios::beg);
+            std::vector<Personita> buffer(chunkSize);            
+            
+            for (size_t pos = start; pos < end; pos += chunkSize) {
+                size_t recordsToRead = std::min(chunkSize, end - pos);
+                file.read(reinterpret_cast<char*>(buffer.data()), recordsToRead * sizeof(Personita));
+
+                // Verificar si la lectura fue exitosa
+                if (!file) {
+                    std::cerr << "Error al leer desde el archivo en posición " << pos << " (leídos " << file.gcount() << " bytes)" << std::endl;
+                    break;
+                }
+
+                {
+                    std::lock_guard<std::mutex> lock(treeMutex);
+                    for (size_t i = 0; i < recordsToRead; ++i) {
+                        // Insertar directamente en el BTree
+                        if (buffer[i].dni[0] != '\0') {
+                            tree.Insert(buffer[i].dni, buffer[i].pageID);
+                        }
+                    }
+                }
+            }
+            activeThreads--;
+            std::cout << "Hilo completado para posiciones de " << start << " a " << end << std::endl;
+            
+        };
+
+        size_t chunkPerThread = numRecords / numThreads;
+        for (unsigned int i = 0; i < numThreads; ++i) {
+            size_t start = i * chunkPerThread;
+            size_t end = (i == numThreads - 1) ? numRecords : start + chunkPerThread;
+            std::cout << "haciendo thread emplace back [" << i+1 << "]" << "\n";
+            threads.emplace_back(loadChunk, start, end);
+        }
+
+        for (auto& t : threads) {
+            if (t.joinable()) {
+                t.join();
+            }
+        }
+        
+
+        if (this->file.fail() && !this->file.eof()) {
+            std::cerr << "Error al leer el archivo." << std::endl;
         }
     }
 
@@ -191,37 +279,8 @@ public:
         tree.Remove(dniToRemove.c_str());
     }
 
-    /* page manager Version 1.0.0 methods
-    template <typename T>
-    T readPage(const long& n, const T& object)
-    {
-        T object;
-        clear();
-        seekg(n * sizeof(T), std::ios::beg);
-        read(reinterpret_cast<char*>(&object), sizeof(T));
-        if (!good()) {
-            std::cerr << "Error al leer page: " << n << std::endl;
-        }
-        return object;
-    }
-
-    template <typename T>
-    void writePage(const long& n, std::vector<T>& p)
-    {
-        clear();
-        for (size_t i = 0; i < p.size(); i++)
-        {
-            seekp(i * sizeof(p[i]), std::ios::beg);
-            p[i].id = i;
-            write(reinterpret_cast<char*>(&p[i]), sizeof(p[i]));
-            if (!good()) {
-                std::cerr << "Error al escribir en page: " << n << std::endl;
-            }
-        }
-    }
-    */
-
 private:
     // Private member variable to hold the value
+    std::fstream file;
     const char* filename;
 };

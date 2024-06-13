@@ -220,7 +220,7 @@ int main()
     */
     
     
-    pageManager.ReadFileAndLoadToBtree(t);
+    pageManager.LoadDataToBTree(t);
     std::cout << "BTree cargado a RAM\n";
     //t.PrintBTree();
     
