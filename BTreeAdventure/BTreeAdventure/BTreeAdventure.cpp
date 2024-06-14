@@ -240,8 +240,8 @@ int main()
     
     inicio = std::chrono::system_clock::now();
     //obtener el page ID de un DNI
-    int pageid = t.GetPageIDByDNI("68072971");
-    //int pageid = 3;
+    //int pageid = t.GetPageIDByDNI("68072971");
+    int pageid = 3;
 
     std::cout << "\n";
     if (pageid >= 0) {

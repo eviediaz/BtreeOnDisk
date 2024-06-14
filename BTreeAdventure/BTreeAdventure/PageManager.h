@@ -55,10 +55,10 @@ public:
     Personita ReadGetObjectByPageID(const long& pageID)
     {
         Personita person;
-        clear();
-        seekg(pageID * sizeof(person), std::ios::beg);
-        read(reinterpret_cast<char*>(&person), sizeof(person));
-        if (!good()) {
+        this->file.clear();
+        this->file.seekg(pageID * sizeof(person), std::ios::beg);
+        this->file.read(reinterpret_cast<char*>(&person), sizeof(person));
+        if (!this->file.good()) {
             std::cerr << "Error al leer page: " << pageID << std::endl;
         }
         return person;
@@ -109,6 +109,7 @@ public:
             return;
         }
 
+        
         size_t numRecords = fileSize / sizeof(Personita);
         // numRecords / numThreads (4 125 000) -> se insta llena a 10gb
         // 1 000 000 -> se insta llena a 4gb
@@ -190,6 +191,7 @@ public:
         if (this->file.fail() && !this->file.eof()) {
             std::cerr << "Error al leer el archivo." << std::endl;
         }
+        
     }
 
     void AddNewPerson(BTree& tree, Personita& person) {
@@ -201,7 +203,7 @@ public:
 
         WriteObjectInDisk(newPageID, person);
 
-        if (!good()) {
+        if (!this->file.good()) {
             std::cerr << "Error al escribir el nuevo registro en el archivo." << std::endl;
             return;
         }
@@ -213,9 +215,9 @@ public:
     void WriteObjectInDisk(long newPageID, Personita& person)
     {
         // Escribir el nuevo registro en el archivo
-        clear();
-        seekp(newPageID * sizeof(Personita), std::ios::beg);
-        write(reinterpret_cast<char*>(&person), sizeof(person));
+        this->file.clear();
+        this->file.seekp(newPageID * sizeof(Personita), std::ios::beg);
+        this->file.write(reinterpret_cast<char*>(&person), sizeof(person));
     }
 
     void DeleteRecordFromDisk(long pageID, BTree& tree) {
@@ -234,19 +236,19 @@ public:
         }
 
         // Leer registros del archivo original y copiar los que no se van a eliminar
-        clear();
-        seekg(0, std::ios::beg); // Mover el puntero al inicio del archivo
+        this->file.clear();
+        this->file.seekg(0, std::ios::beg); // Mover el puntero al inicio del archivo
         Personita person;
         long currentID = 0;
 
-        while (read(reinterpret_cast<char*>(&person), sizeof(Personita))) {
+        while (this->file.read(reinterpret_cast<char*>(&person), sizeof(Personita))) {
             if (currentID != pageID) {
                 tempFile.write(reinterpret_cast<char*>(&person), sizeof(person));
             }
             currentID++;
         }
 
-        if (fail() && !eof()) {
+        if (this->file.fail() && !this->file.eof()) {
             std::cerr << "Error al leer el archivo original." << std::endl;
             tempFile.close();
             std::remove(tempFilename); // Eliminar el archivo temporal en caso de error
@@ -255,7 +257,7 @@ public:
 
         // Cerrar archivos
         tempFile.close();
-        close();
+        this->file.close();
 
         // Eliminar el archivo original y renombrar el archivo temporal
         if (std::remove(filename) != 0) {
@@ -270,8 +272,8 @@ public:
         }
 
         // Reabrir el archivo original como binario
-        open(filename, std::ios::in | std::ios::out | std::ios::binary);
-        if (!is_open()) {
+        this->file.open(filename, std::ios::in | std::ios::out | std::ios::binary);
+        if (!this->file.is_open()) {
             std::cerr << "Error al reabrir el archivo: " << filename << std::endl;
         }
 
