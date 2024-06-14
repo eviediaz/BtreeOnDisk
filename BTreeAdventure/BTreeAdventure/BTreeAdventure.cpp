@@ -236,7 +236,10 @@ int main()
     // Crear un nuevo B-Tree para la deserialización
     //BTree newTree(7);
 
-    
+    std::chrono::time_point<std::chrono::system_clock> inicio;
+    std::chrono::time_point<std::chrono::system_clock> fin;
+
+    inicio = std::chrono::system_clock::now();
 
     t.Deserialize(filename);
     std::cout << "B-Tree deserializado desde " << filename << std::endl;
@@ -254,12 +257,9 @@ int main()
     
     
     //obtener el page ID de un DNI
-    std::chrono::time_point<std::chrono::system_clock> inicio;
-    std::chrono::time_point<std::chrono::system_clock> fin;
-
-    inicio = std::chrono::system_clock::now();
-    //int pageid = t.GetPageIDByDNI("98013259");
-    int pageid = 32999999;
+    
+    int pageid = t.GetPageIDByDNI("98013259");
+    //int pageid = 32999999;
 
     std::cout << "\n";
     if (pageid >= 0) {
@@ -279,6 +279,10 @@ int main()
     std::cout << "\nEl tiempo de ejecucion es: " << tiempo_segundos << " segundos";
     std::cout << "\nfinished xd\n";
     
+    while (true)
+    {
+
+    }
         
     return 0;
 }
