@@ -33,25 +33,27 @@ public:
         }
     }
 
-    /// @brief Get the size of a the file
-    /// @return the size of a file
+    /// <summary>
+    /// open the file and get the syze of the file in bytes 
+    /// </summary>
+    /// <returns> returns the size of the file </returns>
     std::uintmax_t GetFileSize() {
         std::ifstream in(this->filename, std::ios::binary | std::ios::ate);
         if (!in.is_open()) {
-            std::cerr << "Error al abrir el archivo para obtener el tamani." << std::endl;
+            std::cerr << "Error al abrir el archivo para obtener el tamanio." << std::endl;
             return -1;
         }
         std::uintmax_t fileSize = in.tellg();
         in.close();
         std::cout << "Tamanio del archivo: " << fileSize << " bytes" << std::endl;
         return fileSize;
-        /*
-        clear();
-        seekg(0, std::ios::end);
-        return tellg();
-        */
     }
 
+    /// <summary>
+    /// read the file and search it's location in disk by it's pageID
+    /// </summary>
+    /// <param name="pageID"></param>
+    /// <returns> returns an 'Personita' object </returns>
     Personita ReadGetObjectByPageID(const long& pageID)
     {
         Personita person;
@@ -64,6 +66,11 @@ public:
         return person;
     };
 
+    /// <summary>
+    /// Read the file by a given chunk, reads the chunk and insert the data in the BTree
+    ///  and load it to RAM
+    /// </summary>
+    /// <param name="tree"></param>
     void ReadFileAndLoadToBtree(BTree& tree) {
         if (!this->file.is_open()) {
             std::cerr << "Error: el archivo no esta abierto." << std::endl;
@@ -101,6 +108,10 @@ public:
         }
     }
 
+    /// <summary>
+    /// Read an 'equitative' chunk of records and give it to each thread, loads the BTree to RAM
+    /// </summary>
+    /// <param name="tree"></param>
     void LoadDataToBTree(BTree& tree)
     {
         std::uintmax_t fileSize = GetFileSize();
@@ -194,6 +205,7 @@ public:
         
     }
 
+    // TODO: Change logic
     void AddNewPerson(BTree& tree, Personita& person) {
         // Verificar el tamaño del archivo para determinar el nuevo pageID
         long newPageID = GetFileSize() / sizeof(Personita);
@@ -212,6 +224,11 @@ public:
         tree.Insert(person.dni, person.pageID);
     }
 
+    /// <summary>
+    /// Write a 'Personita' object (478 bytes) in the file
+    /// </summary>
+    /// <param name="newPageID"></param>
+    /// <param name="person"></param>
     void WriteObjectInDisk(long newPageID, Personita& person)
     {
         // Escribir el nuevo registro en el archivo
@@ -220,6 +237,7 @@ public:
         this->file.write(reinterpret_cast<char*>(&person), sizeof(person));
     }
 
+    // TODO: Change logic
     void DeleteRecordFromDisk(long pageID, BTree& tree) {
         // Leer el registro del archivo para obtener el DNI antes de eliminarlo
         Personita personToRemove = ReadGetObjectByPageID(pageID);

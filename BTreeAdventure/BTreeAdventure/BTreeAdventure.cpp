@@ -12,7 +12,7 @@
 #include "Person.h"
 #include "BTree.h"
 
-/*
+
 // Declaración previa de funciones de generación aleatoria
 std::string generar_dni_aleatorio();
 std::string generar_nombre_aleatorio();
@@ -23,6 +23,8 @@ std::string generar_direccion_aleatorio();
 std::string generar_telefono_aleatorio();
 std::string generar_correo_aleatorio(std::string& nombre, std::string& apellido);
 std::string generar_estado_civil_aleatorio();
+
+void GenerateNRecordsData(long numberOfRecordsToGenerate, PageManager& pageManager);
 
 Personita generar_persona_aleatoria(int pageID) {
     std::string dni = generar_dni_aleatorio();
@@ -190,79 +192,83 @@ std::string generar_estado_civil_aleatorio() {
 
     return estados[dis(gen)];
 }
-*/
+
 
 int main()
 {
-    BTree t(195); // Un árbol B con grado mínimo 4
+    /*
+    * TODO: Improve BTree order calculus logic
+    int minimunDegree                       4 bytes                            
+    std::vector<int> pagesID;               (2 * t - 1 ) * 4 bytes
+    std::vector<std::array<char, 9>> dnis;  (2 * t - 1 ) * 9 bytes
+    std::vector<BTreeNode*> children;       (2 * t ) * 8 bytes
+    int actualNumberKeys;                   4 bytes
+    bool isLeaf;                            1 bytes
+
+    */
+
+    // estimate size of BTreeNode 4096 bytes 
+    // t = 195 -> size of each node it's 8kb 8096
+    BTree t(195); // create btree with a given order (t) 
+
+    // the file where the btree is goign to serialize/deserialize
     std::string filename = "btree_serialized.bin";
+
+    // the page manager to do write and read disk operations in a given file
     PageManager pageManager("people.bin");
 
-    /*
-    for (long i = 0; i < 33000000; ++i) {
-        Personita persona = generar_persona_aleatoria(i);
-        pageManager.WriteObjectInDisk(i, persona);
-
-        if (i % 100000 == 0) { // Mostrar progreso cada 100,000 registros
-            std::cout << "Progreso: " << i << " registros generados." << std::endl;
-        }
-    }
+    // the number of citizen records to generate
+    long numberOfRecordsToGenerate = 1;
     
-
-    std::cout << "Generacion completada." << std::endl;
-    long fileSize = pageManager.GetFileSize();
-
-    // Calcular el número total de registros en el archivo
-    long totalRegistros = fileSize / sizeof(Personita);
-
-    // Calcular el grado mínimo
-    int gradoMinimo = static_cast<int>(std::ceil(static_cast<double>(totalRegistros) / 2));
-    std::cout << "El grado minimo del arbol B es: " << gradoMinimo << std::endl;
-    */
+    // function to generate N number of records and write them on disk
+    // if you want to generate a N records and write them on disk remember
+    // after you generated the file you must comment this function again so you won't 
+    // genearte the recods again
+    //GenerateNRecordsData(numberOfRecordsToGenerate, pageManager);
     
     
+    // read from people.bin and load the BTree by reading it 
     //pageManager.ReadFileAndLoadToBtree(t);
-    //std::cout << "BTree cargado a RAM\n";
+    //std::cout << "BTree cargado a RAM\n"; 
+    
+    
     //t.PrintBTree();
     
 
-    /*
-    // Serializar el B-Tree a un archivo binario
-    t.Serialize(filename);
-    std::cout << "B-Tree serializado a " << filename << std::endl;
-    */
-
     
-    // Crear un nuevo B-Tree para la deserialización
-    //BTree newTree(7);
+    // 'serialize' the BTree and write the 'serialized' BTree on disk in 'filename' file
+    //t.Serialize(filename);
+    //std::cout << "B-Tree serializado a " << filename << std::endl;
 
     std::chrono::time_point<std::chrono::system_clock> inicio;
     std::chrono::time_point<std::chrono::system_clock> fin;
 
     inicio = std::chrono::system_clock::now();
 
-    t.Deserialize(filename);
-    std::cout << "B-Tree deserializado desde " << filename << std::endl;
+    // read the file named 'filename' and 'deserialize' the BTree to load it to RAM 
+    //t.Deserialize(filename);
+    //std::cout << "B-Tree deserializado desde " << filename << std::endl;
     
 
-    /*
+    // TODO: change insert record in file and BTree logic
     // Agregar un nuevo registro
-    Personita newPerson("JESUS XD", 24, "71454823", -1); // -1 para indicar que aún no tiene pageID
-    pageManager.AddNewPerson(t, newPerson);
-    */
+    //Personita newPerson("JESUS XD", 24, "71454823", -1); // -1 para indicar que aún no tiene pageID
+    //pageManager.AddNewPerson(t, newPerson);
     
     
+    // not recommend to use - a BTree of 33 million of data it's huge
     //std::cout << "El recorrido del arbol construido es:" << std::endl;
     //t.PrintBTree();
     
-    
-    //obtener el page ID de un DNI
-    
+    /*
+    // TODO: Improve security in search 'DNI' in BTree
+    // simple search BTree function
     int pageid = t.GetPageIDByDNI("98013259");
-    //int pageid = 32999999;
+    //int lastPageID = 32999999;
 
     std::cout << "\n";
-    if (pageid >= 0) {
+    if (pageid >= 0) 
+    {
         Personita p1 = pageManager.ReadGetObjectByPageID(pageid);
         p1.ImprimirDatos();
         //std::cout << "SE VA A ELIMINAR !!!! " << "\n";
@@ -272,17 +278,37 @@ int main()
     {
         std::cout << "No existe p " << "\n";
     }
+    */
+
     fin = std::chrono::system_clock::now();
 
     std::chrono::duration<double> tiempo = fin - inicio;
     double tiempo_segundos = tiempo.count();
     std::cout << "\nEl tiempo de ejecucion es: " << tiempo_segundos << " segundos";
     std::cout << "\nfinished xd\n";
-    
-    while (true)
-    {
-
-    }
         
     return 0;
+}
+
+void GenerateNRecordsData(long numberOfRecordsToGenerate, PageManager& pageManager)
+{
+    for (long i = 0; i < numberOfRecordsToGenerate; ++i)
+    {
+        Personita persona = generar_persona_aleatoria(i);
+        pageManager.WriteObjectInDisk(i, persona);
+
+        if (i % 100000 == 0)
+        {
+            // show progress by 100,000 records
+            std::cout << "Progreso: " << i << " registros generados." << std::endl;
+        }
+    }
+
+    std::cout << "Generacion completada." << std::endl;
+    long fileSize = pageManager.GetFileSize();
+
+    // calculate the total of recods in the file
+    long totalRecords = fileSize / sizeof(Personita);
+
+    // calculate 't' of BTree
 }

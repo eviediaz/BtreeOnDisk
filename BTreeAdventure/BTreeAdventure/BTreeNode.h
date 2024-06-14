@@ -24,7 +24,7 @@ public:
         pagesID.resize(2 * minimunDegree - 1);
         dnis.resize(2 * minimunDegree - 1);
         children.resize(2 * minimunDegree);
-    }    
+    }
     
     void InsertNonFull(const char* dni, int pageID) {
         // Inicializa i con el índice del elemento más a la derecha
