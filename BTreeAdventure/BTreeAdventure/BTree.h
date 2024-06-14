@@ -10,6 +10,19 @@ public:
         this->minimunDegree = minimunDegree;
     }
 
+    BTreeNode* GetRoot() {
+        return root;
+    }
+
+    int GetMinimunDegree()
+    {
+        return minimunDegree;
+    }
+
+    void SetRoot(BTreeNode* newRoot) {
+        root = newRoot;
+    }
+
     void Insert(const char* dniToInsert, int pageID)
     {
         // Si el árbol está vacío
@@ -57,33 +70,6 @@ public:
         }
         // Llama al método search de la raíz
         return root->search(dni);
-    }
-
-    void Serialize(const std::string& filename) {
-        std::ofstream outFile(filename, std::ios::binary);
-        if (!outFile.is_open()) {
-            std::cerr << "Error al abrir el archivo para serializar." << std::endl;
-            return;
-        }
-
-        if (root != nullptr) {
-            root->Serialize(outFile);
-        }
-
-        outFile.close();
-    }
-
-    void Deserialize(const std::string& filename) {
-        std::ifstream inFile(filename, std::ios::binary);
-        if (!inFile.is_open()) {
-            std::cerr << "Error al abrir el archivo para deserializar." << std::endl;
-            return;
-        }
-
-        root = new BTreeNode(minimunDegree, true); // Se debe saber si es hoja o no
-        root->Deserialize(inFile);
-
-        inFile.close();
     }
 
     void Remove(const char* dni) {

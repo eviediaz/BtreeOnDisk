@@ -209,14 +209,14 @@ int main()
 
     // estimate size of BTreeNode 4096 bytes 
     // t = 195 -> size of each node it's 8kb 8096
-    BTree t(195); // create btree with a given order (t) 
+    BTree t(97); // create btree with a given order (t) 
 
     // the file where the btree is goign to serialize/deserialize
     std::string filename = "btree_serialized.bin";
 
     // the page manager to do write and read disk operations in a given file
     PageManager pageManager("people.bin");
-
+    
     // the number of citizen records to generate
     long numberOfRecordsToGenerate = 1;
     
@@ -224,12 +224,12 @@ int main()
     // if you want to generate a N records and write them on disk remember
     // after you generated the file you must comment this function again so you won't 
     // genearte the recods again
-    //GenerateNRecordsData(numberOfRecordsToGenerate, pageManager);
+    // GenerateNRecordsData(numberOfRecordsToGenerate, pageManager);
     
     
     // read from people.bin and load the BTree by reading it 
-    //pageManager.ReadFileAndLoadToBtree(t);
-    //std::cout << "BTree cargado a RAM\n"; 
+    // pageManager.ReadFileAndLoadToBtree(t);
+    // std::cout << "BTree cargado a RAM\n"; 
     
     
     //t.PrintBTree();
@@ -238,6 +238,7 @@ int main()
     
     // 'serialize' the BTree and write the 'serialized' BTree on disk in 'filename' file
     //t.Serialize(filename);
+    // pageManager.SerializeBTree(t, "btreSerializeDos.bin");
     //std::cout << "B-Tree serializado a " << filename << std::endl;
 
     std::chrono::time_point<std::chrono::system_clock> inicio;
@@ -246,7 +247,9 @@ int main()
     inicio = std::chrono::system_clock::now();
 
     // read the file named 'filename' and 'deserialize' the BTree to load it to RAM 
-    //t.Deserialize(filename);
+    // pageManager.DeserializeBTree(t, "btree_serialized.bin");
+    // t.Deserialize(filename);
+    pageManager.DeserializeBTree(t, "btreSerializeDos.bin");
     //std::cout << "B-Tree deserializado desde " << filename << std::endl;
     
 
@@ -260,7 +263,7 @@ int main()
     //std::cout << "El recorrido del arbol construido es:" << std::endl;
     //t.PrintBTree();
     
-    /*
+    
     // TODO: Improve security in search 'DNI' in BTree
     // simple search BTree function
     int pageid = t.GetPageIDByDNI("98013259");
@@ -278,7 +281,7 @@ int main()
     {
         std::cout << "No existe p " << "\n";
     }
-    */
+    
 
     fin = std::chrono::system_clock::now();
 

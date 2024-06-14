@@ -108,101 +108,67 @@ public:
         }
     }
 
-    /// <summary>
-    /// Read an 'equitative' chunk of records and give it to each thread, loads the BTree to RAM
-    /// </summary>
-    /// <param name="tree"></param>
-    void LoadDataToBTree(BTree& tree)
-    {
-        std::uintmax_t fileSize = GetFileSize();
-        if (fileSize <= 0) {
-            std::cerr << "Error: tamanio del archivo no valido." << std::endl;
+    void SerializeTree(BTreeNode* node, std::ofstream& outFile) {
+        if (node == nullptr) return;
+        outFile.write(reinterpret_cast<char*>(&node->isLeaf), sizeof(node->isLeaf));
+        outFile.write(reinterpret_cast<char*>(&node->actualNumberKeys), sizeof(node->actualNumberKeys));
+
+        for (int i = 0; i < node->actualNumberKeys; ++i) {
+            outFile.write(node->dnis[i].data(), 9); // 9 bytes para el DNI
+            outFile.write(reinterpret_cast<char*>(&node->pagesID[i]), sizeof(node->pagesID[i]));
+        }
+
+        if (!node->isLeaf) {
+            for (int i = 0; i <= node->actualNumberKeys; ++i) {
+                SerializeTree(node->children[i], outFile); // Serializar los nodos hijos recursivamente
+            }
+        }
+    }
+
+    BTreeNode* DeserializeTree(std::ifstream& inFile, int minimunDegree) {
+        bool isLeaf;
+        int actualNumberKeys;
+        inFile.read(reinterpret_cast<char*>(&isLeaf), sizeof(isLeaf));
+        inFile.read(reinterpret_cast<char*>(&actualNumberKeys), sizeof(actualNumberKeys));
+
+        BTreeNode* node = new BTreeNode(minimunDegree, isLeaf);
+        node->actualNumberKeys = actualNumberKeys;
+
+        for (int i = 0; i < actualNumberKeys; ++i) {
+            inFile.read(node->dnis[i].data(), 9);
+            inFile.read(reinterpret_cast<char*>(&node->pagesID[i]), sizeof(node->pagesID[i]));
+        }
+
+        if (!isLeaf) {
+            for (int i = 0; i <= actualNumberKeys; ++i) {
+                node->children[i] = DeserializeTree(inFile, minimunDegree);
+            }
+        }
+
+        return node;
+    }
+
+    void SerializeBTree(BTree& tree, const char* outputFilename) {
+        std::ofstream outFile(outputFilename, std::ios::binary);
+        if (!outFile.is_open()) {
+            std::cerr << "Error al abrir el archivo de salida: " << outputFilename << " - " << strerror(errno) << std::endl;
             return;
         }
+        SerializeTree(tree.GetRoot(), outFile);
+        outFile.close();
+        std::cout << "B-Tree serializado en: " << outputFilename << std::endl;
+    }
 
-        
-        size_t numRecords = fileSize / sizeof(Personita);
-        // numRecords / numThreads (4 125 000) -> se insta llena a 10gb
-        // 1 000 000 -> se insta llena a 4gb
-        //   100 000  -> comienza con 400mb aprox hasta 1.3gb
-        size_t chunkSize = 100000;
-        std::cout << "numRecords: " << numRecords << "\n";
-        std::cout << "chunkSize: " << chunkSize << "\n";
-
-        // Number of threads to use for parallel processing
-        unsigned int numThreads = std::thread::hardware_concurrency();
-        std::vector<std::thread> threads;
-        threads.reserve(numThreads);
-        std::atomic<int> activeThreads(0);
-        // esta wea es peligrosa xd
-        //size_t chunkSize = numRecords / numThreads; // Tamanio del bloque a leer en cada iteración
-        std::cout << "threads: " << numThreads << "\n";
-
-
-        // Mutex for thread-safe insertion to BTree
-        std::mutex treeMutex;
-
-        
-        // Lambda function for loading data in each thread
-        auto loadChunk = [&](size_t start, size_t end) {
-            std::ifstream file(this->filename, std::ios::in | std::ios::binary);
-            if (!file.is_open()) {
-                std::cerr << "Error al abrir el archivo en hilo." << std::endl;
-                return;
-            }
-            else
-            {
-                std::cout << "\narchivo abierto buenardo" << "\n";
-            }
-
-            
-            file.seekg(start * sizeof(Personita), std::ios::beg);
-            std::vector<Personita> buffer(chunkSize);            
-            
-            for (size_t pos = start; pos < end; pos += chunkSize) {
-                size_t recordsToRead = std::min(chunkSize, end - pos);
-                file.read(reinterpret_cast<char*>(buffer.data()), recordsToRead * sizeof(Personita));
-
-                // Verificar si la lectura fue exitosa
-                if (!file) {
-                    std::cerr << "Error al leer desde el archivo en posición " << pos << " (leídos " << file.gcount() << " bytes)" << std::endl;
-                    break;
-                }
-
-                {
-                    std::lock_guard<std::mutex> lock(treeMutex);
-                    for (size_t i = 0; i < recordsToRead; ++i) {
-                        // Insertar directamente en el BTree
-                        if (buffer[i].dni[0] != '\0') {
-                            tree.Insert(buffer[i].dni, buffer[i].pageID);
-                        }
-                    }
-                }
-            }
-            activeThreads--;
-            std::cout << "Hilo completado para posiciones de " << start << " a " << end << std::endl;
-            
-        };
-
-        size_t chunkPerThread = numRecords / numThreads;
-        for (unsigned int i = 0; i < numThreads; ++i) {
-            size_t start = i * chunkPerThread;
-            size_t end = (i == numThreads - 1) ? numRecords : start + chunkPerThread;
-            std::cout << "haciendo thread emplace back [" << i+1 << "]" << "\n";
-            threads.emplace_back(loadChunk, start, end);
+    void DeserializeBTree(BTree& tree, const char* inputFilename) {
+        std::ifstream inFile(inputFilename, std::ios::binary);
+        if (!inFile.is_open()) {
+            std::cerr << "Error al abrir el archivo de entrada: " << inputFilename << " - " << strerror(errno) << std::endl;
+            return;
         }
-
-        for (auto& t : threads) {
-            if (t.joinable()) {
-                t.join();
-            }
-        }
-        
-
-        if (this->file.fail() && !this->file.eof()) {
-            std::cerr << "Error al leer el archivo." << std::endl;
-        }
-        
+        BTreeNode* root = DeserializeTree(inFile, tree.GetMinimunDegree());
+        tree.SetRoot(root);
+        inFile.close();
+        std::cout << "B-Tree deserializado desde: " << inputFilename << std::endl;
     }
 
     // TODO: Change logic

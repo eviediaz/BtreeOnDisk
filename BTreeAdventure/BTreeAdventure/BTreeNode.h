@@ -168,6 +168,7 @@ public:
         }
     }
 
+    /*
     void Serialize(std::ofstream& outFile) {
         outFile.write(reinterpret_cast<char*>(&isLeaf), sizeof(isLeaf));
         outFile.write(reinterpret_cast<char*>(&actualNumberKeys), sizeof(actualNumberKeys));
@@ -200,6 +201,7 @@ public:
             }
         }
     }
+    */
 
     void Traverse() {
         int i;
