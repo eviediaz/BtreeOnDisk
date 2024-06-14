@@ -65,20 +65,20 @@ public:
     };
 
     void ReadFileAndLoadToBtree(BTree& tree) {
-        if (!is_open()) {
+        if (!this->file.is_open()) {
             std::cerr << "Error: el archivo no esta abierto." << std::endl;
         }
 
-        clear(); // Limpiar cualquier bandera de error anterior
-        seekg(0, std::ios::beg); // Mover el puntero al inicio del archivo        
+        this->file.clear(); // Limpiar cualquier bandera de error anterior
+        this->file.seekg(0, std::ios::beg); // Mover el puntero al inicio del archivo        
         
         Personita person;
         const size_t chunkSize = 10000; // Leer 10000 registros a la vez
         std::vector<Personita> buffer(chunkSize);
 
         while (true) {
-            read(reinterpret_cast<char*>(buffer.data()), chunkSize * sizeof(Personita));
-            std::streamsize bytesRead = gcount();
+            this->file.read(reinterpret_cast<char*>(buffer.data()), chunkSize * sizeof(Personita));
+            std::streamsize bytesRead = this->file.gcount();
 
             if (bytesRead == 0) {
                 break;
@@ -96,7 +96,7 @@ public:
             }
         }        
 
-        if (fail() && !eof()) {
+        if (this->file.fail() && !this->file.eof()) {
             std::cerr << "Error al leer el archivo." << std::endl;
         }
     }

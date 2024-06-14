@@ -195,6 +195,7 @@ std::string generar_estado_civil_aleatorio() {
 int main()
 {
     BTree t(195); // Un árbol B con grado mínimo 4
+    std::string filename = "btree_serialized.bin";
     PageManager pageManager("people.bin");
 
     /*
@@ -220,9 +221,25 @@ int main()
     */
     
     
-    pageManager.LoadDataToBTree(t);
-    std::cout << "BTree cargado a RAM\n";
+    //pageManager.ReadFileAndLoadToBtree(t);
+    //std::cout << "BTree cargado a RAM\n";
     //t.PrintBTree();
+    
+
+    /*
+    // Serializar el B-Tree a un archivo binario
+    t.Serialize(filename);
+    std::cout << "B-Tree serializado a " << filename << std::endl;
+    */
+
+    
+    // Crear un nuevo B-Tree para la deserialización
+    //BTree newTree(7);
+
+    
+
+    t.Deserialize(filename);
+    std::cout << "B-Tree deserializado desde " << filename << std::endl;
     
 
     /*
@@ -235,13 +252,14 @@ int main()
     //std::cout << "El recorrido del arbol construido es:" << std::endl;
     //t.PrintBTree();
     
+    
+    //obtener el page ID de un DNI
     std::chrono::time_point<std::chrono::system_clock> inicio;
     std::chrono::time_point<std::chrono::system_clock> fin;
-    
+
     inicio = std::chrono::system_clock::now();
-    //obtener el page ID de un DNI
-    //int pageid = t.GetPageIDByDNI("68072971");
-    int pageid = 3;
+    //int pageid = t.GetPageIDByDNI("98013259");
+    int pageid = 32999999;
 
     std::cout << "\n";
     if (pageid >= 0) {

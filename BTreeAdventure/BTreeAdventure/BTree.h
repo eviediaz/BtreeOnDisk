@@ -36,12 +36,8 @@ public:
                 // La nueva raíz tiene dos hijos ahora. Decide cuál de los
                 // dos hijos va a tener la nueva clave
                 int i = 0;
-                char currentDNI[9] = { 0 };
-                std::memcpy(currentDNI, s->dnis[0].data(), 8);
-                char dniToInsertTemp[9] = { 0 };
-                std::memcpy(dniToInsertTemp, dniToInsert, 8);
-
-                if ((std::memcmp(currentDNI, dniToInsertTemp, 8) < 0)) i++;
+                
+                if ((std::memcmp(s->dnis[0].data(), dniToInsert, 8) < 0)) i++;
                 s->children[i]->InsertNonFull(dniToInsert, pageID);
 
                 // Cambia la raíz
@@ -61,6 +57,33 @@ public:
         }
         // Llama al método search de la raíz
         return root->search(dni);
+    }
+
+    void Serialize(const std::string& filename) {
+        std::ofstream outFile(filename, std::ios::binary);
+        if (!outFile.is_open()) {
+            std::cerr << "Error al abrir el archivo para serializar." << std::endl;
+            return;
+        }
+
+        if (root != nullptr) {
+            root->Serialize(outFile);
+        }
+
+        outFile.close();
+    }
+
+    void Deserialize(const std::string& filename) {
+        std::ifstream inFile(filename, std::ios::binary);
+        if (!inFile.is_open()) {
+            std::cerr << "Error al abrir el archivo para deserializar." << std::endl;
+            return;
+        }
+
+        root = new BTreeNode(minimunDegree, true); // Se debe saber si es hoja o no
+        root->Deserialize(inFile);
+
+        inFile.close();
     }
 
     void Remove(const char* dni) {
