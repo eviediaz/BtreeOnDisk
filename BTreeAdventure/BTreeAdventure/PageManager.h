@@ -7,6 +7,7 @@
 #include <iostream>
 #include "BTree.h"
 #include "Person.h"
+#include <iomanip>
 
 class PageManager : protected std::fstream // FStream methods and attributes are going to be protected
 {
@@ -267,6 +268,41 @@ public:
         if (!this->file.good()) {
             std::cerr << "Error al marcar el registro como eliminado en el archivo." << std::endl;
         }
+    }
+
+    void PrintOneHundredRecords(const char* filename, int inicio, int final) {
+        std::ifstream file(filename, std::ios::binary);
+        if (!file.is_open()) {
+            std::cerr << "Error abriendo el archivo " << filename << std::endl;
+            return;
+        }
+
+        Personita persona;
+        int count = 0;
+        int records_to_skip = inicio;
+
+        std::cout << "--------------------------------------------------------------------------------------\n";
+        std::cout << "| DNI       | Nombre                | Apellido             | Edad | Correo                     |\n";
+        std::cout << "--------------------------------------------------------------------------------------\n";
+
+        // Saltar los registros hasta el índice de inicio
+        while (file.read(reinterpret_cast<char*>(&persona), sizeof(Personita)) && count < records_to_skip) {
+            count++;
+        }
+
+        // Imprimir los registros desde el índice de inicio hasta el índice final
+        count = 0;
+        while (file.read(reinterpret_cast<char*>(&persona), sizeof(Personita)) && count <= (final - inicio)) {
+            std::cout << "| " << std::setw(10) << std::left << persona.dni
+                << " | " << std::setw(20) << std::left << persona.name
+                << " | " << std::setw(20) << std::left << persona.lastname
+                << " | " << std::setw(4) << std::left << persona.edad
+                << " | " << std::setw(25) << std::left << persona.email
+                << " |\n";
+            count++;
+        }
+        std::cout << "--------------------------------------------------------------------------------------\n";
+        file.close();
     }
 
 private:

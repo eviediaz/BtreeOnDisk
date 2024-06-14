@@ -8,191 +8,20 @@
 #include <random>
 #include <cstring>
 #include <chrono>
+#include "DataGenerator.h"
 #include "PageManager.h"
 #include "Person.h"
 #include "BTree.h"
 
-
-// Declaración previa de funciones de generación aleatoria
-std::string generar_dni_aleatorio();
-std::string generar_nombre_aleatorio();
-std::string generar_apellido_aleatorio();
-std::string generar_nacionalidad_aleatorio();
-std::string generar_lugar_nacimiento_aleatorio();
-std::string generar_direccion_aleatorio();
-std::string generar_telefono_aleatorio();
-std::string generar_correo_aleatorio(std::string& nombre, std::string& apellido);
-std::string generar_estado_civil_aleatorio();
-
-void GenerateNRecordsData(long numberOfRecordsToGenerate, PageManager& pageManager);
-
-Personita generar_persona_aleatoria(int pageID) {
-    std::string dni = generar_dni_aleatorio();
-    std::string nombre = generar_nombre_aleatorio();
-    std::string apellido = generar_apellido_aleatorio();
-    int edad = 18 + (std::rand() % 60); // Generar una edad aleatoria entre 18 y 77
-    std::string nacionalidad = generar_nacionalidad_aleatorio();
-    std::string lugarNacimiento = generar_lugar_nacimiento_aleatorio();
-    std::string direccion = generar_direccion_aleatorio();
-    std::string telefono = generar_telefono_aleatorio();
-    std::string correo = generar_correo_aleatorio(nombre, apellido);
-    std::string estadoCivil = generar_estado_civil_aleatorio();
-
-    // Crear el objeto Personita
-    Personita persona(
-        nombre.c_str(),
-        edad,
-        dni.c_str(),
-        pageID,
-        apellido.c_str(),
-        nacionalidad.c_str(),
-        lugarNacimiento.c_str(),
-        direccion.c_str(),
-        telefono.c_str(),
-        correo.c_str(),
-        estadoCivil.c_str()
-    );
-
-    return persona;
+void mostrar_menu() {
+    std::cout << "Menu de opciones:\n";
+    std::cout << "1. Insertar un nuevo registro\n";
+    std::cout << "2. Buscar un registro por DNI\n";
+    std::cout << "3. Eliminar un registro por DNI\n";
+    std::cout << "4. Imprimir los primeros 100 registros\n";
+    std::cout << "5. Salir\n";
+    std::cout << "Seleccione una opcion: ";
 }
-
-// Implementación de las funciones de generación aleatoria
-std::string generar_dni_aleatorio() {
-    static const std::string digitos = "0123456789";
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(0, digitos.size() - 1);
-
-    std::string resultado;
-    for (size_t i = 0; i < 8; ++i) {
-        resultado += digitos[dis(gen)];
-    }
-    return resultado;
-}
-
-std::string generar_nombre_aleatorio() {
-    static const std::vector<std::string> nombres = {
-        "Pepito", "Juan", "Maria", "Andre", "Pedro", "Ana", "Evie", "Dennis",
-        "Jesus", "Jorge", "Rosa", "Luis", "Carlos", "Sofia", "Lucia", "Miguel",
-        "Jose", "Manuel", "Ricardo", "Raul", "Luisa", "Fernando", "Javier",
-        "Joaquin", "Julieta", "Julia", "Diego", "Valentina", "Felipe", "Camila",
-        "Mateo", "Isabella", "Nicolas", "Sara", "Samuel", "Laura", "Daniel",
-        "Mariana", "Alejandro", "Carolina"
-    };
-
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(0, nombres.size() - 1);
-
-    return nombres[dis(gen)];
-}
-
-std::string generar_apellido_aleatorio() {
-    static const std::vector<std::string> apellidos = {
-        "Gonzales", "Lopez", "Perez", "Rodriguez", "Garcia", "Diaz", "Ceballos",
-        "Vargas", "Torres", "Mendoza", "Carrasco", "Gutierrez", "Villanueva",
-        "Cordova", "Cruz", "Vasquez", "Villegas", "Vega", "Vera", "Velasquez",
-        "Vargas", "Valencia", "Urbina", "Ugarte", "Toro", "Tello", "Tafur",
-        "Soto", "Silva", "Sifuentes", "Serrano", "Serna", "Segura", "Santos",
-        "Santiago", "Sanchez", "Salazar", "Ruiz", "Rojas", "Rivera", "Rios",
-        "Rivas", "Rivas", "Reyes", "Reyna", "Requena", "Ramirez", "Ramos",
-        "Ramirez", "Quispe", "Quintana", "Puma", "Pizarro", "Pinto", "Pineda",
-        "Pinedo", "Pinedo", "Perez"
-    };
-
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(0, apellidos.size() - 1);
-
-    return apellidos[dis(gen)];
-}
-
-std::string generar_nacionalidad_aleatorio() {
-    static const std::vector<std::string> estados = { "Peruano(a)" };
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(0, estados.size() - 1);
-
-    return estados[dis(gen)];
-}
-
-std::string generar_lugar_nacimiento_aleatorio() {
-    static const std::vector<std::string> lugar_nacimiento = {
-        "Lima", "Cajamarca", "Cusco", "Arequipa", "Puno", "Ica", "Tacna",
-        "Piura", "Lambayeque", "La Libertad", "Ancash", "Junin", "Huanuco",
-        "Pasco", "Ucayali", "Madre de Dios", "Loreto", "San Martin", "Amazonas",
-        "Tumbes", "Moquegua", "Apurimac", "Ayacucho", "Huancavelica"
-    };
-
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(0, lugar_nacimiento.size() - 1);
-
-    return lugar_nacimiento[dis(gen)];
-}
-
-std::string generar_direccion_aleatorio() {
-    static const std::vector<std::string> direcciones = {
-        "Calle Rosas 123", "Av. Javier Prado 456", "Jirón Rickenbaker 789",
-        "Jr. Ancash 143", "Av. Abancay 561", "Callejón Secreto", "Calle Zurbaran 201",
-        "Av. Primavera 232", "Jr. Puno 154", "Jr. Ayacucho 371", "Calle Luiggi Pirandello 314",
-        "Av. Guardia Civil 1070", "Jr. Lampa 101", "Psj. 106", "Calle 175",
-        "Av. Tacna 971", "Jr. Huallaga 138", "Psj. Velasquez 211", "Calle Paita 347",
-        "Av. Alfonso Ugarte 893", "Jr. Carabaya 87", "Psj. Cotahuasi 55",
-        "Calle Las Herramientas 166", "Av. Elmer Faucett 1124", "Jr. Galileo 19", "Psj. Venus 20"
-    };
-
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(0, direcciones.size() - 1);
-
-    return direcciones[dis(gen)];
-}
-
-std::string generar_telefono_aleatorio() {
-    static const std::string digitos = "0123456789";
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(0, digitos.size() - 1);
-
-    std::string resultado;
-    for (size_t i = 0; i < 7; ++i) {
-        resultado += digitos[dis(gen)];
-    }
-    return "9" + resultado;
-}
-
-std::string generar_correo_aleatorio(std::string& nombre, std::string& apellido) {
-    static const std::vector<std::string> dominios = {
-        "@gmail.com", "@hotmail.com", "@yahoo.com", "@outlook.com", "@icloud.com",
-        "@yahoo.es", "@gmail.es", "@hotmail.es"
-    };
-
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(0, dominios.size() - 1);
-
-    std::string nombreLower = nombre;
-    std::transform(nombreLower.begin(), nombreLower.end(), nombreLower.begin(), ::tolower);
-
-    std::string apellidoLower = apellido;
-    std::transform(apellidoLower.begin(), apellidoLower.end(), apellidoLower.begin(), ::tolower);
-
-    return nombreLower + apellidoLower + dominios[dis(gen)];
-}
-
-std::string generar_estado_civil_aleatorio() {
-    static const std::vector<std::string> estados = {
-        "So", "Ca", "Di", "Vi", "Co"
-    };
-
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    std::uniform_int_distribution<> dis(0, estados.size() - 1);
-
-    return estados[dis(gen)];
-}
-
 
 int main()
 {
@@ -207,109 +36,142 @@ int main()
 
     */
 
+
+    // for data 33 M
     // estimate size of BTreeNode 4096 bytes 
     // t = 195 -> size of each node it's 8kb 8096
-    BTree t(8); // create btree with a given order (t) 
+    // btre t = 195;
+    BTree t(195); // create btree with a given order (t) 
+    std::string btreeSerializedFileName = "btree_serialized.bin";
+    std::string citizenDataFileName = "people.bin";
 
+    /*
+    // For data < 1M
     // the file where the btree is goign to serialize/deserialize
+    btree t = 8
     std::string btreeSerializedFileName = "btreeTestUno.bin";
     std::string citizenDataFileName = "testUno.bin";
+    */
 
     // the page manager to do write and read disk operations in a given file
     PageManager pageManager(citizenDataFileName.c_str());
-    
-    
-    /*
-    // the number of citizen records to generate
-    long numberOfRecordsToGenerate = 500000;
+    DataGenerator dataGenerator;
 
-    // function to generate N number of records and write them on disk
-    // if you want to generate a N records and write them on disk remember
-    // after you generated the file you must comment this function again so you won't 
-    // genearte the recods again
-    GenerateNRecordsData(numberOfRecordsToGenerate, pageManager);
-    */
-    
-    /*
-    // read from people.bin and load the BTree by reading it 
-    pageManager.ReadFileAndLoadToBtree(t);
-    std::cout << "BTree cargado a RAM\n"; 
-    */
-
-    /*
-    // 'serialize' the BTree and write the 'serialized' BTree on disk in 'btreeSerializedFileName' file
-    pageManager.SerializeBTree(t, btreeSerializedFileName.c_str());
-    */
+    std::ifstream infile(citizenDataFileName);
+    bool dataGenerated = infile.good();
+    infile.close();
 
     std::chrono::time_point<std::chrono::system_clock> inicio;
     std::chrono::time_point<std::chrono::system_clock> fin;
 
     inicio = std::chrono::system_clock::now();
-
-    /* 
-    // Function to Deserialize the serialized BTree file and load it to RAM
-    // read the file named 'btreeSerializedFileName' and 'deserialize' the BTree to load it to RAM 
-    pageManager.DeserializeBTree(t, btreeSerializedFileName.c_str());;
-    */
-    
-    /*
-    // TODO: change insert record in file and BTree logic
-    // Agregar un nuevo registro
-    // Datos de la nueva persona
-    const char* name = "nuevoNombre";
-    int edad = 69;
-    const char* dni = "69965678";
-    const char* lastname = "lastName";
-    const char* nationality = "Chile";
-    const char* placeOfBirth = "Tuki xd";
-    const char* address = "123 synagard St";
-    const char* phone = "555-0709";
-    const char* email = "syna.god@example.com";
-    const char* civilStatus = "So";
-
-    // Crear una nueva instancia de Personita usando el constructor parametrizado
-    Personita newPerson(name, edad, dni, -1, lastname, nationality, placeOfBirth,
-        address, phone, email, civilStatus);
-
-    // Agregar la nueva persona al B-Tree y al archivo, y serializar el B-Tree en 'btree_serialized.bin'
-    pageManager.AddNewPerson(t, newPerson, btreeSerializedFileName.c_str());
-    */
-
-    /*
-    // Print BTree function
-    // not recommend to use - a BTree of 33 million of data it's huge
-    std::cout << "El recorrido del arbol construido es:" << std::endl;
-    t.PrintBTree();
-    */
-    
-    /*
-    // TODO: Improve security in search 'DNI' in BTree
-    // simple search BTree function
-    std::string dniToSearch = "71454824";
-    int pageid = t.GetPageIDByDNI(dniToSearch.c_str());
-    //int lastPageID = 500001;
-
-    std::cout << "\n";
-    if (pageid >= 0)
+    if (!dataGenerated) 
     {
-        Personita p1 = pageManager.ReadGetObjectByPageID(pageid);
-        p1.ImprimirDatos();
+        //std::cout << "data NO GENERADA -> SE CREA DATOS RANDOM";
+        
+        long numberOfRecordsToGenerate = 500000;
+        dataGenerator.GenerateNRecordsData(numberOfRecordsToGenerate, pageManager);
+        pageManager.ReadFileAndLoadToBtree(t);
+        pageManager.SerializeBTree(t, btreeSerializedFileName.c_str());
+        
     }
     else 
     {
-        std::cout << "No existe p " << "\n";
+        //std::cout << "data generada -> se carga el serializado";
+        pageManager.DeserializeBTree(t, btreeSerializedFileName.c_str());
     }
-    */
     
 
-    /*
-    // Delete operation
-    // Datos de la persona a eliminar
-    const char* dniToDelete = "12345678";
+    int opcion;
+    do {
+        mostrar_menu();
+        std::cin >> opcion;
+        std::cin.ignore(); // Limpiar el buffer de entrada
 
-    // Eliminar la persona del archivo 'people.bin' y del B-Tree
-    pageManager.DeleteRecordFromDisk(t, dniToDelete, btreeSerializedFileName.c_str());
-    */
+        switch (opcion) {
+        case 1: {
+            // TODO: Check if generated DNI person exits in BTree
+            // Insertar un nuevo registro
+            std::string nombre, apellido, dni, nacionalidad, lugarNacimiento, direccion, telefono, correo, estadoCivil;
+            int edad;
+
+            Personita nuevaPersona = dataGenerator.GenerateRandomPersonita();
+            nuevaPersona.ImprimirDatos();
+            /*
+            std::cout << "Ingrese el nombre: ";
+            std::getline(std::cin, nombre);
+            std::cout << "Ingrese el apellido: ";
+            std::getline(std::cin, apellido);
+            std::cout << "Ingrese el DNI: ";
+            std::getline(std::cin, dni);
+            std::cout << "Ingrese la edad: ";
+            std::cin >> edad;
+            std::cin.ignore();
+            std::cout << "Ingrese la nacionalidad: ";
+            std::getline(std::cin, nacionalidad);
+            std::cout << "Ingrese el lugar de nacimiento: ";
+            std::getline(std::cin, lugarNacimiento);
+            std::cout << "Ingrese la direccion: ";
+            std::getline(std::cin, direccion);
+            std::cout << "Ingrese el telefono: ";
+            std::getline(std::cin, telefono);
+            std::cout << "Ingrese el correo: ";
+            std::getline(std::cin, correo);
+            std::cout << "Ingrese el estado civil: ";
+            std::getline(std::cin, estadoCivil);
+
+            Personita nuevaPersona(
+                nombre.c_str(), edad, dni.c_str(), -1, apellido.c_str(),
+                nacionalidad.c_str(), lugarNacimiento.c_str(), direccion.c_str(),
+                telefono.c_str(), correo.c_str(), estadoCivil.c_str()
+            );
+
+            pageManager.AddNewPerson(t, nuevaPersona, btreeSerializedFileName.c_str());
+            */
+            break;
+        }
+        case 2: {
+            // Buscar un registro por DNI
+            std::string dni;
+            std::cout << "Ingrese el DNI a buscar: ";
+            std::getline(std::cin, dni);
+
+            int pageID = t.GetPageIDByDNI(dni.c_str());
+            if (pageID >= 0) {
+                Personita persona = pageManager.ReadGetObjectByPageID(pageID);
+                persona.ImprimirDatos();
+            }
+            else {
+                std::cout << "No existe una persona con el DNI " << dni << "\n";
+            }
+            break;
+        }
+        case 3: {
+            // Eliminar un registro por DNI
+            std::string dni;
+            std::cout << "Ingrese el DNI a eliminar: ";
+            std::getline(std::cin, dni);
+
+            pageManager.DeleteRecordFromDisk(t, dni.c_str(), btreeSerializedFileName.c_str());
+            break;
+        }
+        case 4: {
+            int inicio, final;
+            std::cout << "Ingrese el indice de inicio: ";
+            std::cin >> inicio;
+            std::cout << "Ingrese el indice final: ";
+            std::cin >> final;
+
+            pageManager.PrintOneHundredRecords(citizenDataFileName.c_str(), inicio, final);
+            break;
+        }
+        case 5:
+            std::cout << "Saliendo...\n";
+            break;
+        default:
+            std::cout << "Opcion no valida. Intente nuevamente.\n";
+        }
+    } while (opcion != 5);
 
     fin = std::chrono::system_clock::now();
 
@@ -319,27 +181,4 @@ int main()
     std::cout << "\nfinished xd\n";
         
     return 0;
-}
-
-void GenerateNRecordsData(long numberOfRecordsToGenerate, PageManager& pageManager)
-{
-    for (long i = 0; i < numberOfRecordsToGenerate; ++i)
-    {
-        Personita persona = generar_persona_aleatoria(i);
-        pageManager.WritePersonitaInDisk(i, persona);
-
-        if (i % 100000 == 0)
-        {
-            // show progress by 100,000 records
-            std::cout << "Progreso: " << i << " registros generados." << std::endl;
-        }
-    }
-
-    std::cout << "Generacion completada." << std::endl;
-    long fileSize = pageManager.GetFileSize();
-
-    // calculate the total of recods in the file
-    long totalRecords = fileSize / sizeof(Personita);
-
-    // calculate 't' of BTree
 }

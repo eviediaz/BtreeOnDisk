@@ -44,5 +44,8 @@
     <ClInclude Include="BTree.h">
       <Filter>Archivos de origen</Filter>
     </ClInclude>
+    <ClInclude Include="DataGenerator.h">
+      <Filter>Archivos de origen</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
