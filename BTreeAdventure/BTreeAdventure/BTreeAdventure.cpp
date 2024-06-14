@@ -209,79 +209,107 @@ int main()
 
     // estimate size of BTreeNode 4096 bytes 
     // t = 195 -> size of each node it's 8kb 8096
-    BTree t(97); // create btree with a given order (t) 
+    BTree t(8); // create btree with a given order (t) 
 
     // the file where the btree is goign to serialize/deserialize
-    std::string filename = "btree_serialized.bin";
+    std::string btreeSerializedFileName = "btreeTestUno.bin";
+    std::string citizenDataFileName = "testUno.bin";
 
     // the page manager to do write and read disk operations in a given file
-    PageManager pageManager("people.bin");
+    PageManager pageManager(citizenDataFileName.c_str());
     
+    
+    /*
     // the number of citizen records to generate
-    long numberOfRecordsToGenerate = 1;
-    
+    long numberOfRecordsToGenerate = 500000;
+
     // function to generate N number of records and write them on disk
     // if you want to generate a N records and write them on disk remember
     // after you generated the file you must comment this function again so you won't 
     // genearte the recods again
-    // GenerateNRecordsData(numberOfRecordsToGenerate, pageManager);
+    GenerateNRecordsData(numberOfRecordsToGenerate, pageManager);
+    */
     
-    
+    /*
     // read from people.bin and load the BTree by reading it 
-    // pageManager.ReadFileAndLoadToBtree(t);
-    // std::cout << "BTree cargado a RAM\n"; 
-    
-    
-    //t.PrintBTree();
-    
+    pageManager.ReadFileAndLoadToBtree(t);
+    std::cout << "BTree cargado a RAM\n"; 
+    */
 
-    
-    // 'serialize' the BTree and write the 'serialized' BTree on disk in 'filename' file
-    //t.Serialize(filename);
-    // pageManager.SerializeBTree(t, "btreSerializeDos.bin");
-    //std::cout << "B-Tree serializado a " << filename << std::endl;
+    /*
+    // 'serialize' the BTree and write the 'serialized' BTree on disk in 'btreeSerializedFileName' file
+    pageManager.SerializeBTree(t, btreeSerializedFileName.c_str());
+    */
 
     std::chrono::time_point<std::chrono::system_clock> inicio;
     std::chrono::time_point<std::chrono::system_clock> fin;
 
     inicio = std::chrono::system_clock::now();
 
-    // read the file named 'filename' and 'deserialize' the BTree to load it to RAM 
-    // pageManager.DeserializeBTree(t, "btree_serialized.bin");
-    // t.Deserialize(filename);
-    pageManager.DeserializeBTree(t, "btreSerializeDos.bin");
-    //std::cout << "B-Tree deserializado desde " << filename << std::endl;
+    /* 
+    // Function to Deserialize the serialized BTree file and load it to RAM
+    // read the file named 'btreeSerializedFileName' and 'deserialize' the BTree to load it to RAM 
+    pageManager.DeserializeBTree(t, btreeSerializedFileName.c_str());;
+    */
     
-
+    /*
     // TODO: change insert record in file and BTree logic
     // Agregar un nuevo registro
-    //Personita newPerson("JESUS XD", 24, "71454823", -1); // -1 para indicar que aún no tiene pageID
-    //pageManager.AddNewPerson(t, newPerson);
-    
-    
+    // Datos de la nueva persona
+    const char* name = "nuevoNombre";
+    int edad = 69;
+    const char* dni = "69965678";
+    const char* lastname = "lastName";
+    const char* nationality = "Chile";
+    const char* placeOfBirth = "Tuki xd";
+    const char* address = "123 synagard St";
+    const char* phone = "555-0709";
+    const char* email = "syna.god@example.com";
+    const char* civilStatus = "So";
+
+    // Crear una nueva instancia de Personita usando el constructor parametrizado
+    Personita newPerson(name, edad, dni, -1, lastname, nationality, placeOfBirth,
+        address, phone, email, civilStatus);
+
+    // Agregar la nueva persona al B-Tree y al archivo, y serializar el B-Tree en 'btree_serialized.bin'
+    pageManager.AddNewPerson(t, newPerson, btreeSerializedFileName.c_str());
+    */
+
+    /*
+    // Print BTree function
     // not recommend to use - a BTree of 33 million of data it's huge
-    //std::cout << "El recorrido del arbol construido es:" << std::endl;
-    //t.PrintBTree();
+    std::cout << "El recorrido del arbol construido es:" << std::endl;
+    t.PrintBTree();
+    */
     
-    
+    /*
     // TODO: Improve security in search 'DNI' in BTree
     // simple search BTree function
-    int pageid = t.GetPageIDByDNI("98013259");
-    //int lastPageID = 32999999;
+    std::string dniToSearch = "71454824";
+    int pageid = t.GetPageIDByDNI(dniToSearch.c_str());
+    //int lastPageID = 500001;
 
     std::cout << "\n";
-    if (pageid >= 0) 
+    if (pageid >= 0)
     {
         Personita p1 = pageManager.ReadGetObjectByPageID(pageid);
         p1.ImprimirDatos();
-        //std::cout << "SE VA A ELIMINAR !!!! " << "\n";
-        //pageManager.DeleteRecordFromDisk(pageid, t);
     }
     else 
     {
         std::cout << "No existe p " << "\n";
     }
+    */
     
+
+    /*
+    // Delete operation
+    // Datos de la persona a eliminar
+    const char* dniToDelete = "12345678";
+
+    // Eliminar la persona del archivo 'people.bin' y del B-Tree
+    pageManager.DeleteRecordFromDisk(t, dniToDelete, btreeSerializedFileName.c_str());
+    */
 
     fin = std::chrono::system_clock::now();
 
@@ -298,7 +326,7 @@ void GenerateNRecordsData(long numberOfRecordsToGenerate, PageManager& pageManag
     for (long i = 0; i < numberOfRecordsToGenerate; ++i)
     {
         Personita persona = generar_persona_aleatoria(i);
-        pageManager.WriteObjectInDisk(i, persona);
+        pageManager.WritePersonitaInDisk(i, persona);
 
         if (i % 100000 == 0)
         {

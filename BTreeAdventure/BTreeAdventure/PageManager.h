@@ -110,14 +110,19 @@ public:
 
     void SerializeTree(BTreeNode* node, std::ofstream& outFile) {
         if (node == nullptr) return;
+
+        // Escribir si el nodo es una hoja
         outFile.write(reinterpret_cast<char*>(&node->isLeaf), sizeof(node->isLeaf));
+        // Escribir el numero de claves en el nodo
         outFile.write(reinterpret_cast<char*>(&node->actualNumberKeys), sizeof(node->actualNumberKeys));
 
+        // Escribir las claves y los identificadores de pagina
         for (int i = 0; i < node->actualNumberKeys; ++i) {
             outFile.write(node->dnis[i].data(), 9); // 9 bytes para el DNI
             outFile.write(reinterpret_cast<char*>(&node->pagesID[i]), sizeof(node->pagesID[i]));
         }
 
+        // Si el nodo no es una hoja, hay que escribir también sus hijos
         if (!node->isLeaf) {
             for (int i = 0; i <= node->actualNumberKeys; ++i) {
                 SerializeTree(node->children[i], outFile); // Serializar los nodos hijos recursivamente
@@ -172,14 +177,14 @@ public:
     }
 
     // TODO: Change logic
-    void AddNewPerson(BTree& tree, Personita& person) {
+    void AddNewPerson(BTree& tree, Personita& person, const char* outputFilename) {
         // Verificar el tamaño del archivo para determinar el nuevo pageID
         long newPageID = GetFileSize() / sizeof(Personita);
 
         // Asignar el nuevo pageID a la persona
         person.pageID = newPageID;
 
-        WriteObjectInDisk(newPageID, person);
+        WritePersonitaInDisk(newPageID, person);
 
         if (!this->file.good()) {
             std::cerr << "Error al escribir el nuevo registro en el archivo." << std::endl;
@@ -188,6 +193,9 @@ public:
 
         // Insertar la nueva persona en el B-Tree
         tree.Insert(person.dni, person.pageID);
+
+        // Serializar el B-Tree en el archivo 'btree_serialized.bin'
+        SerializeBTree(tree, outputFilename);
     }
 
     /// <summary>
@@ -195,74 +203,70 @@ public:
     /// </summary>
     /// <param name="newPageID"></param>
     /// <param name="person"></param>
-    void WriteObjectInDisk(long newPageID, Personita& person)
+    void WritePersonitaInDisk(long newPageID, Personita& person)
     {
         // Escribir el nuevo registro en el archivo
         this->file.clear();
         this->file.seekp(newPageID * sizeof(Personita), std::ios::beg);
         this->file.write(reinterpret_cast<char*>(&person), sizeof(person));
+
+        if (!this->file.good()) {
+            std::cerr << "Error al escribir en el archivo " << filename << std::endl;
+        }
     }
 
     // TODO: Change logic
-    void DeleteRecordFromDisk(long pageID, BTree& tree) {
-        // Leer el registro del archivo para obtener el DNI antes de eliminarlo
-        Personita personToRemove = ReadGetObjectByPageID(pageID);
-        std::string dniToRemove = personToRemove.dni;
+    void DeleteRecordFromDisk(BTree& tree, const char* dni, const char* btreeFilename) {
+        // Paso 1: Buscar el registro por DNI en el archivo 'people.bin'
+        long pageID = tree.GetPageIDByDNI(dni);
 
-        // Nombre del archivo temporal
-        const char* tempFilename = "temp.bin";
+        if (pageID < 0) {
+            std::cerr << "Registro con DNI " << dni << " no encontrado." << std::endl;
+            return;
+        }
+        else {
+            std::cout << "Registro con DNI " << dni << " encontrado en " << pageID << std::endl;
+        }
 
-        // Crear archivo temporal
-        std::fstream tempFile(tempFilename, std::ios::out | std::ios::binary);
-        if (!tempFile.is_open()) {
-            std::cerr << "Error al abrir el archivo temporal." << std::endl;
+        // Paso 2: Marcar el registro como eliminado en 'people.bin'
+        MarkRecordAsDeleted(pageID);
+
+        if (!this->file.good()) {
+            std::cerr << "Error al marcar el registro como eliminado en el archivo." << std::endl;
             return;
         }
 
-        // Leer registros del archivo original y copiar los que no se van a eliminar
+        // Paso 3: Eliminar la clave del B-Tree
+        tree.Remove(dni);
+
+        // Paso 4: Serializar el B-Tree actualizado en 'btreeFilename'
+        SerializeBTree(tree, btreeFilename);
+        
+    }
+
+    void MarkRecordAsDeleted(long pageID) {
+        // Crear una cadena de "DNI eliminado"
+        const char deletedDNI[9] = "DELETED";
+
+        // Mover el puntero a la posición del registro a eliminar
         this->file.clear();
-        this->file.seekg(0, std::ios::beg); // Mover el puntero al inicio del archivo
+        this->file.seekp(pageID * sizeof(Personita), std::ios::beg);
+
+        // Leer el registro actual
         Personita person;
-        long currentID = 0;
+        this->file.read(reinterpret_cast<char*>(&person), sizeof(person));
 
-        while (this->file.read(reinterpret_cast<char*>(&person), sizeof(Personita))) {
-            if (currentID != pageID) {
-                tempFile.write(reinterpret_cast<char*>(&person), sizeof(person));
-            }
-            currentID++;
+        // Marcar el registro como eliminado
+        std::memcpy(person.dni, deletedDNI, sizeof(deletedDNI) - 1);
+        person.dni[sizeof(deletedDNI) - 1] = '\0'; // Agregar el carácter nulo al final
+
+        // Escribir el registro modificado de nuevo en el archivo
+        this->file.seekp(pageID * sizeof(Personita), std::ios::beg);
+        this->file.write(reinterpret_cast<char*>(&person), sizeof(person));
+
+        if (!this->file.good()) {
+            std::cerr << "Error al marcar el registro como eliminado en el archivo." << std::endl;
         }
-
-        if (this->file.fail() && !this->file.eof()) {
-            std::cerr << "Error al leer el archivo original." << std::endl;
-            tempFile.close();
-            std::remove(tempFilename); // Eliminar el archivo temporal en caso de error
-            return;
-        }
-
-        // Cerrar archivos
-        tempFile.close();
-        this->file.close();
-
-        // Eliminar el archivo original y renombrar el archivo temporal
-        if (std::remove(filename) != 0) {
-            std::cerr << "Error al eliminar el archivo original." << std::endl;
-            std::remove(tempFilename); // Eliminar el archivo temporal si falla
-            return;
-        }
-
-        if (std::rename(tempFilename, filename) != 0) {
-            std::cerr << "Error al renombrar el archivo temporal." << std::endl;
-            return;
-        }
-
-        // Reabrir el archivo original como binario
-        this->file.open(filename, std::ios::in | std::ios::out | std::ios::binary);
-        if (!this->file.is_open()) {
-            std::cerr << "Error al reabrir el archivo: " << filename << std::endl;
-        }
-
-        // Eliminar el registro del B-Tree utilizando el DNI obtenido
-        tree.Remove(dniToRemove.c_str());
     }
 
 private:
