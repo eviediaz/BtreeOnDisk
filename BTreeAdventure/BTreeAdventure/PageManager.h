@@ -162,7 +162,7 @@ public:
         }
         SerializeTree(tree.GetRoot(), outFile);
         outFile.close();
-        std::cout << "B-Tree serializado en: " << outputFilename << std::endl;
+        std::cout << "\nB-Tree serializado en: " << outputFilename << std::endl;
     }
 
     void DeserializeBTree(BTree& tree, const char* inputFilename) {
@@ -174,7 +174,7 @@ public:
         BTreeNode* root = DeserializeTree(inFile, tree.GetMinimunDegree());
         tree.SetRoot(root);
         inFile.close();
-        std::cout << "B-Tree deserializado desde: " << inputFilename << std::endl;
+        std::cout << "\nB-Tree deserializado desde: " << inputFilename << std::endl;
     }
 
     // TODO: Change logic

@@ -7,6 +7,7 @@
 #include <iostream>
 #include <random>
 #include <cstring>
+#include <thread>
 #include <chrono>
 #include "DataGenerator.h"
 #include "PageManager.h"
@@ -19,8 +20,35 @@ void mostrar_menu() {
     std::cout << "2. Buscar un registro por DNI\n";
     std::cout << "3. Eliminar un registro por DNI\n";
     std::cout << "4. Imprimir los primeros 100 registros\n";
-    std::cout << "5. Salir\n";
+    std::cout << "5. Limpiar consola\n";
+    std::cout << "6. Salir\n";
     std::cout << "Seleccione una opcion: ";
+}
+
+void ClearConsole() {
+#ifdef _WIN32
+    std::system("cls");
+#else
+    std::system("clear");
+#endif
+}
+
+void LoadingMessage(std::atomic<bool>& loading) {
+    const char* message = "Cargando BTree a RAM";
+    const char* dots[] = { "", ".", "..", "..." };
+    int index = 0;
+
+    while (loading) {
+        // Escribir el mensaje con puntos
+        std::cout << "\r" << message << dots[index++] << "   " << std::flush;
+        if (index == 4) index = 0;
+
+        // Esperar un breve momento antes de actualizar
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    }
+
+    // Borrar el mensaje una vez que termine de cargar
+    std::cout << "\r" << message << "               \n";
 }
 
 int main()
@@ -77,8 +105,15 @@ int main()
     }
     else 
     {
+        std::atomic<bool> loading{ true };
+        std::thread loadingThread(LoadingMessage, std::ref(loading));
         //std::cout << "data generada -> se carga el serializado";
         pageManager.DeserializeBTree(t, btreeSerializedFileName.c_str());
+        // Detener el mensaje de carga y esperar que termine el thread
+        loading = false;
+        loadingThread.join();
+        std::cout << "\nB-Tree cargado a RAM.\n";
+        ClearConsole();
     }
     
 
@@ -92,11 +127,23 @@ int main()
         case 1: {
             // TODO: Check if generated DNI person exits in BTree
             // Insertar un nuevo registro
-            std::string nombre, apellido, dni, nacionalidad, lugarNacimiento, direccion, telefono, correo, estadoCivil;
-            int edad;
 
             Personita nuevaPersona = dataGenerator.GenerateRandomPersonita();
+            std::cout << "\n";
             nuevaPersona.ImprimirDatos();
+
+            int pageID = t.GetPageIDByDNI(nuevaPersona.dni);
+            std::cout << "\n";
+            if (pageID == -1) 
+            {
+                std::cout << "GOOD !! insertando....\n";
+            }
+            else 
+            {
+                std::cout << "ya existe ese DNI...genera otro\n";
+            }
+            std::cout << "\n";
+
             /*
             std::cout << "Ingrese el nombre: ";
             std::getline(std::cin, nombre);
@@ -139,11 +186,13 @@ int main()
             int pageID = t.GetPageIDByDNI(dni.c_str());
             if (pageID >= 0) {
                 Personita persona = pageManager.ReadGetObjectByPageID(pageID);
+                std::cout << "\n";
                 persona.ImprimirDatos();
             }
             else {
                 std::cout << "No existe una persona con el DNI " << dni << "\n";
             }
+            std::cout << "\n";
             break;
         }
         case 3: {
@@ -166,12 +215,15 @@ int main()
             break;
         }
         case 5:
+            ClearConsole();
+            break;
+        case 6:
             std::cout << "Saliendo...\n";
             break;
         default:
             std::cout << "Opcion no valida. Intente nuevamente.\n";
         }
-    } while (opcion != 5);
+    } while (opcion != 6);
 
     fin = std::chrono::system_clock::now();
 

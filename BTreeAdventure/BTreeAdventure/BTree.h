@@ -65,7 +65,7 @@ public:
     int GetPageIDByDNI(const char* dni) {
         // Si la raíz es nula, el árbol está vacío, retorna -1
         if (root == nullptr) {
-            std::cout << "El arbol B esta vacio. Clave " << dni << " no encontrada." << std::endl;
+            std::cout << "\nEl arbol B esta vacio. Clave " << dni << " no encontrada." << std::endl;
             return -1;
         }
         // Llama al método search de la raíz
@@ -74,7 +74,7 @@ public:
 
     void Remove(const char* dni) {
         if (!root) {
-            std::cout << "El arbol esta vacío. No se puede eliminar la clave: " << dni << std::endl;
+            std::cout << "\nEl arbol esta vacío. No se puede eliminar la clave: " << dni << std::endl;
             return;
         }
 

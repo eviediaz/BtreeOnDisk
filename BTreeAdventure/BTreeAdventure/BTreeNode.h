@@ -126,7 +126,7 @@ public:
 
         // Si la clave no se encuentra aquí y este es un nodo hoja
         if (isLeaf) {
-            std::cout << "Clave " << dni << " no encontrada en el B-Tree." << std::endl;
+            std::cout << "\nClave " << dni << " no encontrada en el B-Tree." << std::endl;
             return -1; // Indicador de que la clave no se encontró
         }
 
