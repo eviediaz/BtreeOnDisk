@@ -100,7 +100,7 @@ int main()
         long numberOfRecordsToGenerate = 500000;
         dataGenerator.GenerateNRecordsData(numberOfRecordsToGenerate, pageManager);
         pageManager.ReadFileAndLoadToBtree(t);
-        //pageManager.SerializeBTree(t, btreeSerializedFileName.c_str());
+        pageManager.SerializeBTree(t, btreeSerializedFileName.c_str());
         
     }
     else 
@@ -197,7 +197,7 @@ int main()
             // Serializar el B-Tree en el archivo 'btree_serialized.bin'
             if (btreeUpdated) {
                 std::cout << "Guardando datos del BTree...\n";
-                //pageManager.SerializeBTree(t, btreeSerializedFileName.c_str());
+                pageManager.SerializeBTree(t, btreeSerializedFileName.c_str());
 
             }
             std::cout << "Saliendo...\n";
