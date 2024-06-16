@@ -100,7 +100,7 @@ int main()
         long numberOfRecordsToGenerate = 500000;
         dataGenerator.GenerateNRecordsData(numberOfRecordsToGenerate, pageManager);
         pageManager.ReadFileAndLoadToBtree(t);
-        pageManager.SerializeBTree(t, btreeSerializedFileName.c_str());
+        //pageManager.SerializeBTree(t, btreeSerializedFileName.c_str());
         
     }
     else 
@@ -116,7 +116,7 @@ int main()
         ClearConsole();
     }
     
-
+    bool btreeUpdated = false;
     int opcion;
     do {
         mostrar_menu();
@@ -136,45 +136,20 @@ int main()
             std::cout << "\n";
             if (pageID == -1) 
             {
-                std::cout << "GOOD !! insertando....\n";
+                std::cout << "GOOD !! La data se insertara al BTree\n";
+                // Verificar el tamaño del archivo para determinar el nuevo pageID
+                //long newPageID = pageManager.GetFileSize() / sizeof(Personita);
+                //t.Insert(nuevaPersona.dni, newPageID);
+                pageManager.AddNewPerson(t, nuevaPersona, btreeSerializedFileName.c_str());
+                btreeUpdated = true;
             }
             else 
             {
-                std::cout << "ya existe ese DNI...genera otro\n";
+                std::cout << "Ya existe ese DNI...genera otro\n";
             }
             std::cout << "\n";
 
-            /*
-            std::cout << "Ingrese el nombre: ";
-            std::getline(std::cin, nombre);
-            std::cout << "Ingrese el apellido: ";
-            std::getline(std::cin, apellido);
-            std::cout << "Ingrese el DNI: ";
-            std::getline(std::cin, dni);
-            std::cout << "Ingrese la edad: ";
-            std::cin >> edad;
-            std::cin.ignore();
-            std::cout << "Ingrese la nacionalidad: ";
-            std::getline(std::cin, nacionalidad);
-            std::cout << "Ingrese el lugar de nacimiento: ";
-            std::getline(std::cin, lugarNacimiento);
-            std::cout << "Ingrese la direccion: ";
-            std::getline(std::cin, direccion);
-            std::cout << "Ingrese el telefono: ";
-            std::getline(std::cin, telefono);
-            std::cout << "Ingrese el correo: ";
-            std::getline(std::cin, correo);
-            std::cout << "Ingrese el estado civil: ";
-            std::getline(std::cin, estadoCivil);
-
-            Personita nuevaPersona(
-                nombre.c_str(), edad, dni.c_str(), -1, apellido.c_str(),
-                nacionalidad.c_str(), lugarNacimiento.c_str(), direccion.c_str(),
-                telefono.c_str(), correo.c_str(), estadoCivil.c_str()
-            );
-
-            pageManager.AddNewPerson(t, nuevaPersona, btreeSerializedFileName.c_str());
-            */
+            
             break;
         }
         case 2: {
@@ -202,6 +177,7 @@ int main()
             std::getline(std::cin, dni);
 
             pageManager.DeleteRecordFromDisk(t, dni.c_str(), btreeSerializedFileName.c_str());
+            btreeUpdated = true;
             break;
         }
         case 4: {
@@ -218,6 +194,12 @@ int main()
             ClearConsole();
             break;
         case 6:
+            // Serializar el B-Tree en el archivo 'btree_serialized.bin'
+            if (btreeUpdated) {
+                std::cout << "Guardando datos del BTree...\n";
+                //pageManager.SerializeBTree(t, btreeSerializedFileName.c_str());
+
+            }
             std::cout << "Saliendo...\n";
             break;
         default:

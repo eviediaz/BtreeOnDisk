@@ -131,6 +131,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="BTree.h" />
+    <ClInclude Include="BTreeAdventure.h" />
     <ClInclude Include="BTreeDisk.h" />
     <ClInclude Include="BTreeDiskIterator.h" />
     <ClInclude Include="BTreeNode.h" />

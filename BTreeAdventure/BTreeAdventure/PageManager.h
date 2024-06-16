@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include <windows.h>
 #include <thread>
 #include <mutex>
 #include <condition_variable>
@@ -109,6 +110,93 @@ public:
         }
     }
 
+    void SerializeTree(BTreeNode* node, const char* filename) {
+        if (node == nullptr) return;
+
+        // Crear o abrir el archivo
+        HANDLE hFile = CreateFileA(
+            filename,
+            GENERIC_WRITE | GENERIC_READ,
+            0,
+            NULL,
+            CREATE_ALWAYS,
+            FILE_ATTRIBUTE_NORMAL,
+            NULL);
+
+        if (hFile == INVALID_HANDLE_VALUE) {
+            std::cerr << "Error al abrir o crear el archivo." << std::endl;
+            return;
+        }
+
+        // Crear un mapeo de archivo
+        HANDLE hMapFile = CreateFileMappingA(
+            hFile,
+            NULL,
+            PAGE_READWRITE,
+            0,
+            sizeof(BTreeNode) * 1024, // Tamaño del archivo que se va a mapear
+            NULL);
+
+        if (hMapFile == NULL) {
+            std::cerr << "Error al crear el mapeo de archivo." << std::endl;
+            CloseHandle(hFile);
+            return;
+        }
+
+        // Mapear una vista del archivo en la memoria
+        char* pBuf = (char*)MapViewOfFile(
+            hMapFile,
+            FILE_MAP_ALL_ACCESS,
+            0,
+            0,
+            0);
+
+        if (pBuf == NULL) {
+            std::cerr << "Error al mapear la vista del archivo en la memoria." << std::endl;
+            CloseHandle(hMapFile);
+            CloseHandle(hFile);
+            return;
+        }
+
+        // Serializar el árbol
+        SerializeTreeRecursive(node, pBuf);
+
+        // Desmapear la vista del archivo
+        UnmapViewOfFile(pBuf);
+
+        // Cerrar los handles
+        CloseHandle(hMapFile);
+        CloseHandle(hFile);
+    }
+
+    void SerializeTreeRecursive(BTreeNode* node, char*& pBuf) {
+        if (node == nullptr) return;
+
+        // Escribir si el nodo es una hoja
+        memcpy(pBuf, &node->isLeaf, sizeof(node->isLeaf));
+        pBuf += sizeof(node->isLeaf);
+
+        // Escribir el número de claves en el nodo
+        memcpy(pBuf, &node->actualNumberKeys, sizeof(node->actualNumberKeys));
+        pBuf += sizeof(node->actualNumberKeys);
+
+        // Escribir las claves y los identificadores de página
+        for (int i = 0; i < node->actualNumberKeys; ++i) {
+            memcpy(pBuf, node->dnis[i].data(), 9); // 9 bytes para el DNI
+            pBuf += 9;
+            memcpy(pBuf, &node->pagesID[i], sizeof(node->pagesID[i]));
+            pBuf += sizeof(node->pagesID[i]);
+        }
+
+        // Si el nodo no es una hoja, escribir también sus hijos
+        if (!node->isLeaf) {
+            for (int i = 0; i <= node->actualNumberKeys; ++i) {
+                SerializeTreeRecursive(node->children[i], pBuf); // Serializar los nodos hijos recursivamente
+            }
+        }
+    }
+
+    /*
     void SerializeTree(BTreeNode* node, std::ofstream& outFile) {
         if (node == nullptr) return;
 
@@ -130,6 +218,7 @@ public:
             }
         }
     }
+    */
 
     BTreeNode* DeserializeTree(std::ifstream& inFile, int minimunDegree) {
         bool isLeaf;
@@ -154,6 +243,7 @@ public:
         return node;
     }
 
+    /*
     void SerializeBTree(BTree& tree, const char* outputFilename) {
         std::ofstream outFile(outputFilename, std::ios::binary);
         if (!outFile.is_open()) {
@@ -164,6 +254,7 @@ public:
         outFile.close();
         std::cout << "\nB-Tree serializado en: " << outputFilename << std::endl;
     }
+    */
 
     void DeserializeBTree(BTree& tree, const char* inputFilename) {
         std::ifstream inFile(inputFilename, std::ios::binary);
@@ -194,9 +285,6 @@ public:
 
         // Insertar la nueva persona en el B-Tree
         tree.Insert(person.dni, person.pageID);
-
-        // Serializar el B-Tree en el archivo 'btree_serialized.bin'
-        SerializeBTree(tree, outputFilename);
     }
 
     /// <summary>
@@ -239,10 +327,6 @@ public:
 
         // Paso 3: Eliminar la clave del B-Tree
         tree.Remove(dni);
-
-        // Paso 4: Serializar el B-Tree actualizado en 'btreeFilename'
-        SerializeBTree(tree, btreeFilename);
-        
     }
 
     void MarkRecordAsDeleted(long pageID) {

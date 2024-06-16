@@ -2,6 +2,7 @@
 #include <iostream>
 #include <random>
 #include <cstring>
+#include <unordered_set>
 #include "Person.h"
 #include "PageManager.h"
 class DataGenerator
@@ -65,6 +66,8 @@ public:
         // calculate 't' of BTree
     }
 private:
+    std::unordered_set<std::string> generatedDNIs;
+
     std::string generar_dni_aleatorio() {
         static const std::string digitos = "0123456789";
         std::random_device rd;
@@ -72,9 +75,18 @@ private:
         std::uniform_int_distribution<> dis(0, digitos.size() - 1);
 
         std::string resultado;
-        for (size_t i = 0; i < 8; ++i) {
-            resultado += digitos[dis(gen)];
-        }
+        
+        do 
+        {
+            resultado.clear();
+            for (size_t i = 0; i < 8; ++i) 
+            {
+                resultado += digitos[dis(gen)];
+            }
+        } while (generatedDNIs.find(resultado) != generatedDNIs.end());
+
+        generatedDNIs.insert(resultado);
+
         return resultado;
     }
 
