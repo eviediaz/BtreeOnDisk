@@ -14,6 +14,16 @@
 #include "Person.h"
 #include "BTree.h"
 
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <sys/mman.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <cstring>
+#include "BTreeAdventure.h"
+#endif
+
 void mostrar_menu() {
     std::cout << "Menu de opciones:\n";
     std::cout << "1. Insertar un nuevo registro\n";
@@ -69,9 +79,10 @@ int main()
     // estimate size of BTreeNode 4096 bytes 
     // t = 195 -> size of each node it's 8kb 8096
     // btre t = 195;
-    BTree t(195); // create btree with a given order (t) 
-    std::string btreeSerializedFileName = "btree_serialized.bin";
-    std::string citizenDataFileName = "people.bin";
+    BTree t(195); // create btree with a given order (t)
+    const char* rutaArchivo = "D:\\Repositorios Github\\BtreeManagement\\BTreeAdventure\\BTreeAdventure\\personasxd.bin";
+    const char* btreeSerializedFileName = "superTreeSerializado.bin";
+    const char* citizenDataFileName = "people.bin";
 
     /*
     // For data < 1M
@@ -82,9 +93,15 @@ int main()
     */
 
     // the page manager to do write and read disk operations in a given file
-    PageManager pageManager(citizenDataFileName.c_str());
+    PageManager pageManager(btreeSerializedFileName);
     DataGenerator dataGenerator;
 
+    //pageManager.ReadFileAndLoadToBtree(t);
+    t.SetRoot(pageManager.DeserializeBTree(195));
+    //long numberOfRecordsToGenerate = 300000;
+    //dataGenerator.GenerateNRecordsData(numberOfRecordsToGenerate, pageManager);
+
+    /*
     std::ifstream infile(citizenDataFileName);
     bool dataGenerated = infile.good();
     infile.close();
@@ -95,16 +112,27 @@ int main()
     inicio = std::chrono::system_clock::now();
     if (!dataGenerated) 
     {
-        //std::cout << "data NO GENERADA -> SE CREA DATOS RANDOM";
-        
-        long numberOfRecordsToGenerate = 500000;
-        dataGenerator.GenerateNRecordsData(numberOfRecordsToGenerate, pageManager);
-        pageManager.ReadFileAndLoadToBtree(t);
+        std::cout << "EXISTE DATA";
+        // Serializar el árbol
         //pageManager.SerializeBTree(t, btreeSerializedFileName.c_str());
         
     }
     else 
     {
+        
+        std::cout << "data NO GENERADA -> SE CREA DATOS RANDOM";
+
+        /*
+        long numberOfRecordsToGenerate = 300000;
+        dataGenerator.GenerateNRecordsData(numberOfRecordsToGenerate, pageManager);
+        pageManager.ReadFileAndLoadToBtree(t);
+#ifdef _WIN32
+        pageManager.SerializeTree(t.GetRoot(), btreeSerializedFileName.c_str());
+#else
+        pageManager.SerializeTree(t.GetRoot(), btreeSerializedFileName.c_str());
+#endif
+*/
+        /*
         std::atomic<bool> loading{ true };
         std::thread loadingThread(LoadingMessage, std::ref(loading));
         //std::cout << "data generada -> se carga el serializado";
@@ -114,8 +142,18 @@ int main()
         loadingThread.join();
         std::cout << "\nB-Tree cargado a RAM.\n";
         ClearConsole();
+        
     }
+*/
     
+    //foo(dataGenerator, t, pageManager, btreeSerializedFileName, citizenDataFileName, fin, inicio);
+        
+    return 0;
+}
+
+/*
+void foo(DataGenerator& dataGenerator, BTree& t, PageManager& pageManager, std::string& btreeSerializedFileName, std::string& citizenDataFileName, std::chrono::system_clock::time_point& fin, std::chrono::system_clock::time_point& inicio)
+{
     bool btreeUpdated = false;
     int opcion;
     do {
@@ -134,7 +172,7 @@ int main()
 
             int pageID = t.GetPageIDByDNI(nuevaPersona.dni);
             std::cout << "\n";
-            if (pageID == -1) 
+            if (pageID == -1)
             {
                 std::cout << "GOOD !! La data se insertara al BTree\n";
                 // Verificar el tamaño del archivo para determinar el nuevo pageID
@@ -143,13 +181,13 @@ int main()
                 pageManager.AddNewPerson(t, nuevaPersona, btreeSerializedFileName.c_str());
                 btreeUpdated = true;
             }
-            else 
+            else
             {
                 std::cout << "Ya existe ese DNI...genera otro\n";
             }
             std::cout << "\n";
 
-            
+
             break;
         }
         case 2: {
@@ -213,6 +251,5 @@ int main()
     double tiempo_segundos = tiempo.count();
     std::cout << "\nEl tiempo de ejecucion es: " << tiempo_segundos << " segundos";
     std::cout << "\nfinished xd\n";
-        
-    return 0;
 }
+*/

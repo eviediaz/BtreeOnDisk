@@ -1,0 +1,1 @@
+void foo(DataGenerator& dataGenerator, BTree& t, PageManager& pageManager, std::string& btreeSerializedFileName, std::string& citizenDataFileName, std::chrono::system_clock::time_point& fin, std::chrono::system_clock::time_point& inicio);

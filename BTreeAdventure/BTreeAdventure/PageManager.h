@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <windows.h>
+#include <sys/stat.h>
 #include <thread>
 #include <mutex>
 #include <condition_variable>
@@ -10,29 +11,118 @@
 #include "Person.h"
 #include <iomanip>
 
+// Función para crear un archivo binario
+bool createBinaryFile(const char* filename) {
+    std::ofstream file(filename, std::ios::binary);
+    if (!file) {
+        std::cerr << "Error al crear el archivo: " << filename << std::endl;
+        return false;
+    }
+    file.close();
+    std::cout << "Archivo binario creado exitosamente: " << filename << std::endl;
+    return true;
+}
+
 class PageManager : protected std::fstream // FStream methods and attributes are going to be protected
 {
 
 public:
     // Constructor
     PageManager(const char* filename)
-    {
-        this->filename = filename;
-        this->file.open(filename, std::ios::in | std::ios::out | std::ios::binary);
-        if (!this->file.is_open()) {
-            std::cerr << "Error al abrir el archivo: " << filename << std::endl;
-        }
-        else {
-            std::cout << "archivo abierto good " << filename << std::endl;
-        }
-    };
+        : filename(filename), hFile(INVALID_HANDLE_VALUE), hMapFile(NULL), pBuf(NULL), fileSize(0) {
 
-    // Destructor
-    ~PageManager()
-    {
-        if (this->file.is_open()) {
-            this->file.close();
+        // Verificar el nombre del archivo y la ruta
+        if (filename == NULL || strlen(filename) == 0) {
+            std::cerr << "Error: Nombre de archivo invalido" << std::endl;
+            return;
         }
+
+        // Intentar abrir el archivo con la ruta absoluta proporcionada
+        hFile = CreateFileA(
+            filename,
+            GENERIC_READ | GENERIC_WRITE,
+            0,
+            NULL,
+            OPEN_ALWAYS,
+            FILE_ATTRIBUTE_NORMAL,
+            NULL);
+
+        if (hFile == INVALID_HANDLE_VALUE) {
+            std::cerr << "Error al abrir el archivo: " << filename << std::endl;
+            std::cerr << "Codigo de error: " << GetLastError() << std::endl;
+            return;
+        }
+
+        // Verificar el tamaño del archivo
+        LARGE_INTEGER fileSizeLarge;
+        if (!GetFileSizeEx(hFile, &fileSizeLarge)) {
+            std::cerr << "Error al obtener el tamanio del archivo: " << filename << std::endl;
+            CloseHandle(hFile);
+            return;
+        }
+        fileSize = static_cast<size_t>(fileSizeLarge.QuadPart);
+
+        // Si el tamaño del archivo es cero, establecer un tamaño inicial
+        if (fileSize == 0) {
+            const int initialSize = 1024; // Tamaño inicial en bytes
+            if (!SetFilePointerEx(hFile, { initialSize }, NULL, FILE_BEGIN) || !SetEndOfFile(hFile)) {
+                std::cerr << "Error al establecer el tamanio inicial del archivo: " << filename << std::endl;
+                CloseHandle(hFile);
+                return;
+            }
+            fileSize = initialSize;
+        }
+
+        hMapFile = CreateFileMappingA(
+            hFile,
+            NULL,
+            PAGE_READWRITE,
+            0,
+            0,
+            NULL);
+
+        if (hMapFile == NULL) {
+            std::cerr << "Error al crear el mapeo de archivo: " << filename << std::endl;
+            std::cerr << "Codigo de error: " << GetLastError() << std::endl;
+            CloseHandle(hFile);
+            return;
+        }
+
+        pBuf = (char*)MapViewOfFile(
+            hMapFile,
+            FILE_MAP_ALL_ACCESS,
+            0,
+            0,
+            0);
+
+        if (pBuf == NULL) {
+            std::cerr << "Error al mapear la vista del archivo: " << filename << std::endl;
+            std::cerr << "Codigo de error: " << GetLastError() << std::endl;
+            CloseHandle(hMapFile);
+            CloseHandle(hFile);
+            return;
+        }
+
+        std::cout << "Archivo abierto y mapeado exitosamente: " << filename << std::endl;
+    }
+
+    ~PageManager() {
+        if (pBuf != NULL) {
+            UnmapViewOfFile(pBuf);
+            pBuf = NULL;
+        }
+
+        if (hMapFile != NULL) {
+            CloseHandle(hMapFile);
+            hMapFile = NULL;
+        }
+
+        if (hFile != INVALID_HANDLE_VALUE) {
+            CloseHandle(hFile);
+            hFile = INVALID_HANDLE_VALUE;
+        }
+
+        std::cout << "Recursos de archivo liberados correctamente." << std::endl;
     }
 
     /// <summary>
@@ -40,15 +130,14 @@ public:
     /// </summary>
     /// <returns> returns the size of the file </returns>
     std::uintmax_t GetFileSize() {
-        std::ifstream in(this->filename, std::ios::binary | std::ios::ate);
-        if (!in.is_open()) {
-            std::cerr << "Error al abrir el archivo para obtener el tamanio." << std::endl;
+        LARGE_INTEGER fileSize;
+        if (GetFileSizeEx(hFile, &fileSize)) {
+            return static_cast<std::uintmax_t>(fileSize.QuadPart);
+        }
+        else {
+            std::cerr << "Error al obtener el tamaño del archivo." << std::endl;
             return -1;
         }
-        std::uintmax_t fileSize = in.tellg();
-        in.close();
-        std::cout << "Tamanio del archivo: " << fileSize << " bytes" << std::endl;
-        return fileSize;
     }
 
     /// <summary>
@@ -58,14 +147,7 @@ public:
     /// <returns> returns an 'Personita' object </returns>
     Personita ReadGetObjectByPageID(const long& pageID)
     {
-        Personita person;
-        this->file.clear();
-        this->file.seekg(pageID * sizeof(person), std::ios::beg);
-        this->file.read(reinterpret_cast<char*>(&person), sizeof(person));
-        if (!this->file.good()) {
-            std::cerr << "Error al leer page: " << pageID << std::endl;
-        }
-        return person;
+
     };
 
     /// <summary>
@@ -74,39 +156,45 @@ public:
     /// </summary>
     /// <param name="tree"></param>
     void ReadFileAndLoadToBtree(BTree& tree) {
-        if (!this->file.is_open()) {
-            std::cerr << "Error: el archivo no esta abierto." << std::endl;
+        // Verificar que los manejadores y el buffer están correctamente inicializados
+        if (hFile == INVALID_HANDLE_VALUE) {
+            std::cerr << "Error: archivo no abierto." << std::endl;
+            return;
         }
 
-        this->file.clear(); // Limpiar cualquier bandera de error anterior
-        this->file.seekg(0, std::ios::beg); // Mover el puntero al inicio del archivo        
-        
-        Personita person;
-        const size_t chunkSize = 10000; // Leer 10000 registros a la vez
-        std::vector<Personita> buffer(chunkSize);
+        if (hMapFile == NULL) {
+            std::cerr << "Error: mapeo de archivo no creado." << std::endl;
+            return;
+        }
 
-        while (true) {
-            this->file.read(reinterpret_cast<char*>(buffer.data()), chunkSize * sizeof(Personita));
-            std::streamsize bytesRead = this->file.gcount();
+        if (pBuf == NULL) {
+            std::cerr << "Error: vista del archivo no mapeada." << std::endl;
+            return;
+        }
 
-            if (bytesRead == 0) {
-                break;
-            }
+        // Obtener el tamaño del archivo (de nuevo, por si ha cambiado desde la apertura)
+        LARGE_INTEGER fileSize;
+        if (!GetFileSizeEx(hFile, &fileSize)) {
+            std::cerr << "Error al obtener el tamaño del archivo." << std::endl;
+            std::cerr << "Codigo de error: " << GetLastError() << std::endl;
+            return;
+        }
 
-            size_t recordsRead = bytesRead / sizeof(Personita);
+        // Leer los datos y cargarlos en el B-Tree
+        size_t recordSize = sizeof(char) * 8 + sizeof(long);  // Tamaño del registro: dni (8 chars) + pageID (long)
+        size_t numberOfRecords = fileSize.QuadPart / recordSize;
 
-            for (size_t i = 0; i < recordsRead; ++i) {
-                person = buffer[i];
-                tree.Insert(person.dni, person.pageID);
-            }
+        for (size_t i = 0; i < numberOfRecords; ++i) {
+            char dni[8];
+            long pageID;
 
-            if (bytesRead < static_cast<std::streamsize>(chunkSize * sizeof(Personita))) {
-                break;
-            }
-        }        
+            // Leer dni
+            memcpy(dni, pBuf + i * recordSize, sizeof(dni));
+            // Leer pageID
+            memcpy(&pageID, pBuf + i * recordSize + sizeof(dni), sizeof(pageID));
 
-        if (this->file.fail() && !this->file.eof()) {
-            std::cerr << "Error al leer el archivo." << std::endl;
+            // Insertar en el B-Tree
+            tree.Insert(dni, pageID);
         }
     }
 
@@ -196,97 +284,6 @@ public:
         }
     }
 
-    /*
-    void SerializeTree(BTreeNode* node, std::ofstream& outFile) {
-        if (node == nullptr) return;
-
-        // Escribir si el nodo es una hoja
-        outFile.write(reinterpret_cast<char*>(&node->isLeaf), sizeof(node->isLeaf));
-        // Escribir el numero de claves en el nodo
-        outFile.write(reinterpret_cast<char*>(&node->actualNumberKeys), sizeof(node->actualNumberKeys));
-
-        // Escribir las claves y los identificadores de pagina
-        for (int i = 0; i < node->actualNumberKeys; ++i) {
-            outFile.write(node->dnis[i].data(), 9); // 9 bytes para el DNI
-            outFile.write(reinterpret_cast<char*>(&node->pagesID[i]), sizeof(node->pagesID[i]));
-        }
-
-        // Si el nodo no es una hoja, hay que escribir también sus hijos
-        if (!node->isLeaf) {
-            for (int i = 0; i <= node->actualNumberKeys; ++i) {
-                SerializeTree(node->children[i], outFile); // Serializar los nodos hijos recursivamente
-            }
-        }
-    }
-    */
-
-    BTreeNode* DeserializeTree(std::ifstream& inFile, int minimunDegree) {
-        bool isLeaf;
-        int actualNumberKeys;
-        inFile.read(reinterpret_cast<char*>(&isLeaf), sizeof(isLeaf));
-        inFile.read(reinterpret_cast<char*>(&actualNumberKeys), sizeof(actualNumberKeys));
-
-        BTreeNode* node = new BTreeNode(minimunDegree, isLeaf);
-        node->actualNumberKeys = actualNumberKeys;
-
-        for (int i = 0; i < actualNumberKeys; ++i) {
-            inFile.read(node->dnis[i].data(), 9);
-            inFile.read(reinterpret_cast<char*>(&node->pagesID[i]), sizeof(node->pagesID[i]));
-        }
-
-        if (!isLeaf) {
-            for (int i = 0; i <= actualNumberKeys; ++i) {
-                node->children[i] = DeserializeTree(inFile, minimunDegree);
-            }
-        }
-
-        return node;
-    }
-
-    /*
-    void SerializeBTree(BTree& tree, const char* outputFilename) {
-        std::ofstream outFile(outputFilename, std::ios::binary);
-        if (!outFile.is_open()) {
-            std::cerr << "Error al abrir el archivo de salida: " << outputFilename << " - " << strerror(errno) << std::endl;
-            return;
-        }
-        SerializeTree(tree.GetRoot(), outFile);
-        outFile.close();
-        std::cout << "\nB-Tree serializado en: " << outputFilename << std::endl;
-    }
-    */
-
-    void DeserializeBTree(BTree& tree, const char* inputFilename) {
-        std::ifstream inFile(inputFilename, std::ios::binary);
-        if (!inFile.is_open()) {
-            std::cerr << "Error al abrir el archivo de entrada: " << inputFilename << " - " << strerror(errno) << std::endl;
-            return;
-        }
-        BTreeNode* root = DeserializeTree(inFile, tree.GetMinimunDegree());
-        tree.SetRoot(root);
-        inFile.close();
-        std::cout << "\nB-Tree deserializado desde: " << inputFilename << std::endl;
-    }
-
-    // TODO: Change logic
-    void AddNewPerson(BTree& tree, Personita& person, const char* outputFilename) {
-        // Verificar el tamaño del archivo para determinar el nuevo pageID
-        long newPageID = GetFileSize() / sizeof(Personita);
-
-        // Asignar el nuevo pageID a la persona
-        person.pageID = newPageID;
-
-        WritePersonitaInDisk(newPageID, person);
-
-        if (!this->file.good()) {
-            std::cerr << "Error al escribir el nuevo registro en el archivo." << std::endl;
-            return;
-        }
-
-        // Insertar la nueva persona en el B-Tree
-        tree.Insert(person.dni, person.pageID);
-    }
-
     /// <summary>
     /// Write a 'Personita' object (478 bytes) in the file
     /// </summary>
@@ -294,103 +291,129 @@ public:
     /// <param name="person"></param>
     void WritePersonitaInDisk(long newPageID, Personita& person)
     {
-        // Escribir el nuevo registro en el archivo
-        this->file.clear();
-        this->file.seekp(newPageID * sizeof(Personita), std::ios::beg);
-        this->file.write(reinterpret_cast<char*>(&person), sizeof(person));
-
-        if (!this->file.good()) {
-            std::cerr << "Error al escribir en el archivo " << filename << std::endl;
-        }
-    }
-
-    // TODO: Change logic
-    void DeleteRecordFromDisk(BTree& tree, const char* dni, const char* btreeFilename) {
-        // Paso 1: Buscar el registro por DNI en el archivo 'people.bin'
-        long pageID = tree.GetPageIDByDNI(dni);
-
-        if (pageID < 0) {
-            std::cerr << "Registro con DNI " << dni << " no encontrado." << std::endl;
-            return;
-        }
-        else {
-            std::cout << "Registro con DNI " << dni << " encontrado en " << pageID << std::endl;
-        }
-
-        // Paso 2: Marcar el registro como eliminado en 'people.bin'
-        MarkRecordAsDeleted(pageID);
-
-        if (!this->file.good()) {
-            std::cerr << "Error al marcar el registro como eliminado en el archivo." << std::endl;
+        // Verificar el tamaño del archivo
+        LARGE_INTEGER fileSize;
+        if (!GetFileSizeEx(hFile, &fileSize)) {
+            std::cerr << "Error al obtener el tamanio del archivo: " << this->filename << std::endl;
+            std::cerr << "Codigo de error: " << GetLastError() << std::endl;
             return;
         }
 
-        // Paso 3: Eliminar la clave del B-Tree
-        tree.Remove(dni);
-    }
-
-    void MarkRecordAsDeleted(long pageID) {
-        // Crear una cadena de "DNI eliminado"
-        const char deletedDNI[9] = "DELETED";
-
-        // Mover el puntero a la posición del registro a eliminar
-        this->file.clear();
-        this->file.seekp(pageID * sizeof(Personita), std::ios::beg);
-
-        // Leer el registro actual
-        Personita person;
-        this->file.read(reinterpret_cast<char*>(&person), sizeof(person));
-
-        // Marcar el registro como eliminado
-        std::memcpy(person.dni, deletedDNI, sizeof(deletedDNI) - 1);
-        person.dni[sizeof(deletedDNI) - 1] = '\0'; // Agregar el carácter nulo al final
-
-        // Escribir el registro modificado de nuevo en el archivo
-        this->file.seekp(pageID * sizeof(Personita), std::ios::beg);
-        this->file.write(reinterpret_cast<char*>(&person), sizeof(person));
-
-        if (!this->file.good()) {
-            std::cerr << "Error al marcar el registro como eliminado en el archivo." << std::endl;
+        // Si el archivo es más pequeño que la posición donde queremos escribir, aumentar el tamaño del archivo
+        long requiredSize = (newPageID + 1) * sizeof(Personita);
+        if (fileSize.QuadPart < requiredSize) {
+            LARGE_INTEGER newSize;
+            newSize.QuadPart = requiredSize;
+            if (!SetFilePointerEx(hFile, newSize, NULL, FILE_BEGIN) || !SetEndOfFile(hFile)) {
+                std::cerr << "Error al aumentar el tamanio del archivo." << std::endl;
+                std::cerr << "Codigo de error: " << GetLastError() << std::endl;
+                return;
+            }
         }
-    }
 
-    void PrintOneHundredRecords(const char* filename, int inicio, int final) {
-        std::ifstream file(filename, std::ios::binary);
-        if (!file.is_open()) {
-            std::cerr << "Error abriendo el archivo " << filename << std::endl;
+        // Obtener el tamaño de página del sistema
+        SYSTEM_INFO systemInfo;
+        GetSystemInfo(&systemInfo);
+        DWORD pageSize = systemInfo.dwAllocationGranularity;
+
+        // Calcular el offset alineado
+        DWORD offsetLow = (newPageID * sizeof(Personita)) & ~(pageSize - 1);
+        DWORD offsetHigh = ((newPageID * sizeof(Personita)) >> 32) & ~(pageSize - 1);
+        DWORD alignmentOffset = (newPageID * sizeof(Personita)) & (pageSize - 1);
+
+        // Mapear la vista del archivo en la memoria con el offset alineado
+        char* pBufLocal = (char*)MapViewOfFile(
+            hMapFile,
+            FILE_MAP_ALL_ACCESS,
+            offsetHigh,
+            offsetLow,
+            alignmentOffset + sizeof(Personita));
+
+        if (pBufLocal == NULL) {
+            std::cerr << "Error al mapear la vista del archivo en la memoria." << std::endl;
+            std::cerr << "Codigo de error: " << GetLastError() << std::endl;
             return;
         }
 
-        Personita persona;
-        int count = 0;
-        int records_to_skip = inicio;
+        // Ajustar el puntero para la alineación correcta
+        pBufLocal += alignmentOffset;
 
-        std::cout << "--------------------------------------------------------------------------------------\n";
-        std::cout << "| DNI       | Nombre                | Apellido             | Edad | Correo                     |\n";
-        std::cout << "--------------------------------------------------------------------------------------\n";
+        // Escribir el nuevo registro en la memoria mapeada
+        memcpy(pBufLocal, &person, sizeof(Personita));
 
-        // Saltar los registros hasta el índice de inicio
-        while (file.read(reinterpret_cast<char*>(&persona), sizeof(Personita)) && count < records_to_skip) {
-            count++;
-        }
-
-        // Imprimir los registros desde el índice de inicio hasta el índice final
-        count = 0;
-        while (file.read(reinterpret_cast<char*>(&persona), sizeof(Personita)) && count <= (final - inicio)) {
-            std::cout << "| " << std::setw(10) << std::left << persona.dni
-                << " | " << std::setw(20) << std::left << persona.name
-                << " | " << std::setw(20) << std::left << persona.lastname
-                << " | " << std::setw(4) << std::left << persona.edad
-                << " | " << std::setw(25) << std::left << persona.email
-                << " |\n";
-            count++;
-        }
-        std::cout << "--------------------------------------------------------------------------------------\n";
-        file.close();
+        // Desmapear la vista del archivo
+        UnmapViewOfFile(pBufLocal - alignmentOffset);
+        
     }
+
+
+    BTreeNode* DeserializeTree(char*& pBuf, size_t bufferSize, size_t& currentOffset, int minimunDegree) {
+        if (currentOffset + sizeof(bool) + sizeof(int) > bufferSize) {
+            std::cerr << "Error: buffer overflow al deserializar el nodo." << std::endl;
+            return nullptr;
+        }
+
+        bool isLeaf;
+        int actualNumberKeys;
+
+        // Leer isLeaf y actualNumberKeys desde el buffer mapeado
+        memcpy(&isLeaf, pBuf + currentOffset, sizeof(isLeaf));
+        currentOffset += sizeof(isLeaf);
+
+        memcpy(&actualNumberKeys, pBuf + currentOffset, sizeof(actualNumberKeys));
+        currentOffset += sizeof(actualNumberKeys);
+
+        // Crear el nodo BTreeNode
+        BTreeNode* node = new BTreeNode(minimunDegree, isLeaf);
+        node->actualNumberKeys = actualNumberKeys;
+
+        // Leer dnis y pagesID desde el buffer mapeado
+        for (int i = 0; i < actualNumberKeys; ++i) {
+            if (currentOffset + 9 + sizeof(long) > bufferSize) {
+                std::cerr << "Error: buffer overflow al deserializar los datos del nodo." << std::endl;
+                delete node;
+                return nullptr;
+            }
+            memcpy(node->dnis[i].data(), pBuf + currentOffset, 9);
+            currentOffset += 9;
+
+            memcpy(&node->pagesID[i], pBuf + currentOffset, sizeof(node->pagesID[i]));
+            currentOffset += sizeof(node->pagesID[i]);
+        }
+
+        // Si no es una hoja, deserializar también sus hijos
+        if (!isLeaf) {
+            for (int i = 0; i <= actualNumberKeys; ++i) {
+                node->children[i] = DeserializeTree(pBuf, bufferSize, currentOffset, minimunDegree);
+                if (node->children[i] == nullptr) {
+                    delete node;
+                    return nullptr;
+                }
+            }
+        }
+
+        return node;
+    }
+
+    BTreeNode* DeserializeBTree(int minimunDegree) {
+        if (pBuf == NULL) {
+            std::cerr << "Error: vista del archivo no mapeada." << std::endl;
+            return nullptr;
+        }
+
+        // Deserializar el árbol desde el buffer mapeado
+        size_t currentOffset = 0;
+        return DeserializeTree(pBuf, fileSize, currentOffset, minimunDegree);
+    }
+
+
+    
 
 private:
     // Private member variable to hold the value
-    std::fstream file;
+    HANDLE hFile;
+    HANDLE hMapFile;
+    char* pBuf;
+    size_t fileSize;
     const char* filename;
 };
