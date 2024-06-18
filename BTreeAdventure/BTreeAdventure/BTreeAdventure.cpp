@@ -1,255 +1,257 @@
-// BTreeAdventure.cpp : Este archivo contiene la función "main". La ejecución del programa comienza y termina ahí.
-//
-
 #define _CRT_SECURE_NO_WARNINGS
-#include <fstream>
-#include <vector>
 #include <iostream>
-#include <random>
-#include <cstring>
-#include <thread>
-#include <chrono>
-#include "DataGenerator.h"
-#include "PageManager.h"
-#include "Person.h"
-#include "BTree.h"
-
-#ifdef _WIN32
 #include <windows.h>
-#else
-#include <sys/mman.h>
-#include <fcntl.h>
-#include <unistd.h>
+#include <vector>
 #include <cstring>
-#include "BTreeAdventure.h"
-#endif
 
-void mostrar_menu() {
-    std::cout << "Menu de opciones:\n";
-    std::cout << "1. Insertar un nuevo registro\n";
-    std::cout << "2. Buscar un registro por DNI\n";
-    std::cout << "3. Eliminar un registro por DNI\n";
-    std::cout << "4. Imprimir los primeros 100 registros\n";
-    std::cout << "5. Limpiar consola\n";
-    std::cout << "6. Salir\n";
-    std::cout << "Seleccione una opcion: ";
-}
+class Personita {
+public:
+    char name[100];
+    int edad;
+    int dni;
+    int id;
 
-void ClearConsole() {
-#ifdef _WIN32
-    std::system("cls");
-#else
-    std::system("clear");
-#endif
-}
-
-void LoadingMessage(std::atomic<bool>& loading) {
-    const char* message = "Cargando BTree a RAM";
-    const char* dots[] = { "", ".", "..", "..." };
-    int index = 0;
-
-    while (loading) {
-        // Escribir el mensaje con puntos
-        std::cout << "\r" << message << dots[index++] << "   " << std::flush;
-        if (index == 4) index = 0;
-
-        // Esperar un breve momento antes de actualizar
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    Personita() : edad(0), dni(0), id(0) {
+        std::memset(name, 0, sizeof(name));
     }
 
-    // Borrar el mensaje una vez que termine de cargar
-    std::cout << "\r" << message << "               \n";
-}
-
-int main()
-{
-    /*
-    * TODO: Improve BTree order calculus logic
-    int minimunDegree                       4 bytes                            
-    std::vector<int> pagesID;               (2 * t - 1 ) * 4 bytes
-    std::vector<std::array<char, 9>> dnis;  (2 * t - 1 ) * 9 bytes
-    std::vector<BTreeNode*> children;       (2 * t ) * 8 bytes
-    int actualNumberKeys;                   4 bytes
-    bool isLeaf;                            1 bytes
-
-    */
-
-
-    // for data 33 M
-    // estimate size of BTreeNode 4096 bytes 
-    // t = 195 -> size of each node it's 8kb 8096
-    // btre t = 195;
-    BTree t(195); // create btree with a given order (t)
-    const char* rutaArchivo = "D:\\Repositorios Github\\BtreeManagement\\BTreeAdventure\\BTreeAdventure\\personasxd.bin";
-    const char* btreeSerializedFileName = "superTreeSerializado.bin";
-    const char* citizenDataFileName = "people.bin";
-
-    /*
-    // For data < 1M
-    // the file where the btree is goign to serialize/deserialize
-    btree t = 8
-    std::string btreeSerializedFileName = "btreeTestUno.bin";
-    std::string citizenDataFileName = "testUno.bin";
-    */
-
-    // the page manager to do write and read disk operations in a given file
-    PageManager pageManager(btreeSerializedFileName);
-    DataGenerator dataGenerator;
-
-    //pageManager.ReadFileAndLoadToBtree(t);
-    t.SetRoot(pageManager.DeserializeBTree(195));
-    //long numberOfRecordsToGenerate = 300000;
-    //dataGenerator.GenerateNRecordsData(numberOfRecordsToGenerate, pageManager);
-
-    /*
-    std::ifstream infile(citizenDataFileName);
-    bool dataGenerated = infile.good();
-    infile.close();
-
-    std::chrono::time_point<std::chrono::system_clock> inicio;
-    std::chrono::time_point<std::chrono::system_clock> fin;
-
-    inicio = std::chrono::system_clock::now();
-    if (!dataGenerated) 
-    {
-        std::cout << "EXISTE DATA";
-        // Serializar el árbol
-        //pageManager.SerializeBTree(t, btreeSerializedFileName.c_str());
-        
+    Personita(const char* name, int edad, int dni, int id) : edad(edad), dni(dni), id(id) {
+        std::strncpy(this->name, name, sizeof(this->name) - 1); // Copiar el nombre
+        this->name[sizeof(this->name) - 1] = '\0';              // Asegura que la cadena esté terminada en nulo
     }
-    else 
-    {
-        
-        std::cout << "data NO GENERADA -> SE CREA DATOS RANDOM";
+};
 
-        /*
-        long numberOfRecordsToGenerate = 300000;
-        dataGenerator.GenerateNRecordsData(numberOfRecordsToGenerate, pageManager);
-        pageManager.ReadFileAndLoadToBtree(t);
-#ifdef _WIN32
-        pageManager.SerializeTree(t.GetRoot(), btreeSerializedFileName.c_str());
-#else
-        pageManager.SerializeTree(t.GetRoot(), btreeSerializedFileName.c_str());
-#endif
-*/
-        /*
-        std::atomic<bool> loading{ true };
-        std::thread loadingThread(LoadingMessage, std::ref(loading));
-        //std::cout << "data generada -> se carga el serializado";
-        pageManager.DeserializeBTree(t, btreeSerializedFileName.c_str());
-        // Detener el mensaje de carga y esperar que termine el thread
-        loading = false;
-        loadingThread.join();
-        std::cout << "\nB-Tree cargado a RAM.\n";
-        ClearConsole();
-        
+class PageManager {
+private:
+    void PrintLastError() {
+        DWORD errorMessageID = ::GetLastError();
+        if (errorMessageID == 0) return; // No hay error
+
+        LPSTR messageBuffer = nullptr;
+        size_t size = FormatMessageA(
+            FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM | FORMAT_MESSAGE_IGNORE_INSERTS,
+            NULL, errorMessageID, MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT), (LPSTR)&messageBuffer, 0, NULL);
+
+        std::string message(messageBuffer, size);
+        LocalFree(messageBuffer);
+
+        std::cerr << "Error: " << message << std::endl;
     }
-*/
-    
-    //foo(dataGenerator, t, pageManager, btreeSerializedFileName, citizenDataFileName, fin, inicio);
-        
+
+    HANDLE CreateAndOpenFile(const char* filePath, bool createNew) {
+        HANDLE hFile = CreateFileA(
+            filePath,              // Nombre del archivo
+            GENERIC_READ | GENERIC_WRITE, // Acceso de lectura y escritura
+            0,                     // No compartir el archivo
+            NULL,                  // Seguridad predeterminada
+            createNew ? CREATE_ALWAYS : OPEN_ALWAYS, // Crear nuevo archivo o abrir si existe
+            FILE_ATTRIBUTE_NORMAL, // Atributos normales
+            NULL                   // No usar plantillas
+        );
+
+        if (hFile == INVALID_HANDLE_VALUE) {
+            std::cerr << "Error al crear o abrir el archivo: ";
+            PrintLastError();
+        }
+        return hFile;
+    }
+
+public:
+    void AppendPersonitasToFile(const std::vector<Personita>& newPersonitas, const char* filePath) {
+        // Crear o abrir el archivo
+        HANDLE hFile = CreateAndOpenFile(filePath, false);
+        if (hFile == INVALID_HANDLE_VALUE) {
+            return;
+        }
+
+        // Obtener el tamaño del archivo existente
+        DWORD fileSize = GetFileSize(hFile, NULL);
+        if (fileSize == INVALID_FILE_SIZE) {
+            std::cerr << "Error al obtener el tamaño del archivo: ";
+            PrintLastError();
+            CloseHandle(hFile);
+            return;
+        }
+
+        // Calcular el tamaño total a escribir (tamaño existente + tamaño nuevo)
+        size_t newSize = newPersonitas.size() * sizeof(Personita);
+        size_t totalSize = fileSize + newSize;
+
+        // Crear un objeto de mapeo de archivo con el nuevo tamaño
+        HANDLE hMapping = CreateFileMappingA(
+            hFile,                  // Manejador del archivo
+            NULL,                   // Seguridad predeterminada
+            PAGE_READWRITE,         // Permisos de lectura y escritura
+            0,                      // Tamaño máximo del archivo (parte alta)
+            static_cast<DWORD>(totalSize), // Tamaño máximo del archivo (parte baja)
+            NULL                    // Sin nombre
+        );
+
+        if (hMapping == NULL) {
+            std::cerr << "Error al crear el mapeo de archivo: ";
+            PrintLastError();
+            CloseHandle(hFile);
+            return;
+        }
+
+        // Mapear el archivo en memoria
+        char* fileMemory = (char*)MapViewOfFile(
+            hMapping,              // Manejador del mapeo de archivo
+            FILE_MAP_WRITE,        // Permisos de escritura
+            0,                     // Offset de alta palabra
+            0,                     // Offset de baja palabra
+            totalSize              // Tamaño del mapeo
+        );
+
+        if (fileMemory == NULL) {
+            std::cerr << "Error al mapear el archivo en memoria: ";
+            PrintLastError();
+            CloseHandle(hMapping);
+            CloseHandle(hFile);
+            return;
+        }
+
+        // Copiar los datos nuevos en la memoria mapeada después de los datos existentes
+        std::memcpy(fileMemory + fileSize, newPersonitas.data(), newSize);
+
+        // Desmapear el archivo de la memoria
+        if (!UnmapViewOfFile(fileMemory)) {
+            std::cerr << "Error al desmapear el archivo: ";
+            PrintLastError();
+        }
+
+        // Cerrar los manejadores
+        CloseHandle(hMapping);
+        CloseHandle(hFile);
+
+        std::cout << "Se han agregado los nuevos registros al archivo binario exitosamente." << std::endl;
+    }
+
+    void ReadPersonitasFromFile(const char* filePath, int searchID) {
+        // Abrir el archivo en modo de solo lectura
+        HANDLE hFile = CreateFileA(
+            filePath,
+            GENERIC_READ,
+            FILE_SHARE_READ,
+            NULL,
+            OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL,
+            NULL
+        );
+
+        if (hFile == INVALID_HANDLE_VALUE) {
+            std::cerr << "Error al abrir el archivo para lectura: ";
+            PrintLastError();
+            return;
+        }
+
+        // Obtener el tamaño del archivo
+        DWORD fileSize = GetFileSize(hFile, NULL);
+        if (fileSize == INVALID_FILE_SIZE) {
+            std::cerr << "Error al obtener el tamaño del archivo: ";
+            PrintLastError();
+            CloseHandle(hFile);
+            return;
+        }
+
+        // Crear un objeto de mapeo de archivo
+        HANDLE hMapping = CreateFileMappingA(
+            hFile,
+            NULL,
+            PAGE_READONLY,
+            0,
+            0,
+            NULL
+        );
+
+        if (hMapping == NULL) {
+            std::cerr << "Error al crear el mapeo de archivo: ";
+            PrintLastError();
+            CloseHandle(hFile);
+            return;
+        }
+
+        // Mapear el archivo en memoria
+        const char* fileMemory = (const char*)MapViewOfFile(
+            hMapping,
+            FILE_MAP_READ,
+            0,
+            0,
+            fileSize
+        );
+
+        if (fileMemory == NULL) {
+            std::cerr << "Error al mapear el archivo en memoria: ";
+            PrintLastError();
+            CloseHandle(hMapping);
+            CloseHandle(hFile);
+            return;
+        }
+
+        // Calcular el número de registros de Personita
+        size_t numRecords = fileSize / sizeof(Personita);
+
+        // Variable para indicar si se encontró el registro
+        bool found = false;
+
+        // Leer y buscar el registro por ID
+        for (size_t i = 0; i < numRecords; ++i) {
+            const Personita* p = reinterpret_cast<const Personita*>(fileMemory + i * sizeof(Personita));
+            if (p->id == searchID) {
+                std::cout << "Datos encontrados para ID " << searchID << ":" << std::endl;
+                std::cout << "Nombre: " << p->name << std::endl;
+                std::cout << "Edad: " << p->edad << std::endl;
+                std::cout << "DNI: " << p->dni << std::endl;
+                std::cout << "ID: " << p->id << std::endl;
+                found = true;
+                break; // Salir del bucle una vez encontrado
+            }
+        }
+
+        if (!found) {
+            std::cout << "No se encontró ninguna persona con ID " << searchID << "." << std::endl;
+        }
+
+        // Desmapear el archivo de la memoria
+        if (!UnmapViewOfFile(fileMemory)) {
+            std::cerr << "Error al desmapear el archivo: ";
+            PrintLastError();
+        }
+
+        // Cerrar los manejadores
+        CloseHandle(hMapping);
+        CloseHandle(hFile);
+    }
+};
+
+int main() {
+    // Crear tres instancias de Personita
+    Personita p1("Juan Perez", 25, 12345678, 1);
+    Personita p2("Ana Gomez", 30, 87654321, 2);
+    Personita p3("Luis Martinez", 22, 11223344, 3);
+
+    // Agregar las personas a un vector
+    std::vector<Personita> personitas = { p1, p2, p3 };
+
+    // Ruta completa al archivo
+    const char* filePath = "personitas.bin"; // Cambia a la ruta completa de tu archivo
+
+    // Crear instancia de PageManager
+    PageManager pageManager;
+
+    // Escribir las personas en el archivo usando file mapping
+    //pageManager.AppendPersonitasToFile(personitas, filePath);
+
+    // Crear una nueva instancia de Personita
+    Personita p4("Issael Rocha", 12, 71887766, 5);
+
+    // Agregar la nueva persona al archivo
+    std::vector<Personita> newPersonitas = { p4 };
+    //pageManager.AppendPersonitasToFile(newPersonitas, filePath);
+
+    // Leer las personas del archivo usando file mapping y buscar por ID
+    int searchID = 5; // Cambia este valor para buscar un ID específico
+    pageManager.ReadPersonitasFromFile(filePath, searchID);
+
     return 0;
 }
-
-/*
-void foo(DataGenerator& dataGenerator, BTree& t, PageManager& pageManager, std::string& btreeSerializedFileName, std::string& citizenDataFileName, std::chrono::system_clock::time_point& fin, std::chrono::system_clock::time_point& inicio)
-{
-    bool btreeUpdated = false;
-    int opcion;
-    do {
-        mostrar_menu();
-        std::cin >> opcion;
-        std::cin.ignore(); // Limpiar el buffer de entrada
-
-        switch (opcion) {
-        case 1: {
-            // TODO: Check if generated DNI person exits in BTree
-            // Insertar un nuevo registro
-
-            Personita nuevaPersona = dataGenerator.GenerateRandomPersonita();
-            std::cout << "\n";
-            nuevaPersona.ImprimirDatos();
-
-            int pageID = t.GetPageIDByDNI(nuevaPersona.dni);
-            std::cout << "\n";
-            if (pageID == -1)
-            {
-                std::cout << "GOOD !! La data se insertara al BTree\n";
-                // Verificar el tamaño del archivo para determinar el nuevo pageID
-                //long newPageID = pageManager.GetFileSize() / sizeof(Personita);
-                //t.Insert(nuevaPersona.dni, newPageID);
-                pageManager.AddNewPerson(t, nuevaPersona, btreeSerializedFileName.c_str());
-                btreeUpdated = true;
-            }
-            else
-            {
-                std::cout << "Ya existe ese DNI...genera otro\n";
-            }
-            std::cout << "\n";
-
-
-            break;
-        }
-        case 2: {
-            // Buscar un registro por DNI
-            std::string dni;
-            std::cout << "Ingrese el DNI a buscar: ";
-            std::getline(std::cin, dni);
-
-            int pageID = t.GetPageIDByDNI(dni.c_str());
-            if (pageID >= 0) {
-                Personita persona = pageManager.ReadGetObjectByPageID(pageID);
-                std::cout << "\n";
-                persona.ImprimirDatos();
-            }
-            else {
-                std::cout << "No existe una persona con el DNI " << dni << "\n";
-            }
-            std::cout << "\n";
-            break;
-        }
-        case 3: {
-            // Eliminar un registro por DNI
-            std::string dni;
-            std::cout << "Ingrese el DNI a eliminar: ";
-            std::getline(std::cin, dni);
-
-            pageManager.DeleteRecordFromDisk(t, dni.c_str(), btreeSerializedFileName.c_str());
-            btreeUpdated = true;
-            break;
-        }
-        case 4: {
-            int inicio, final;
-            std::cout << "Ingrese el indice de inicio: ";
-            std::cin >> inicio;
-            std::cout << "Ingrese el indice final: ";
-            std::cin >> final;
-
-            pageManager.PrintOneHundredRecords(citizenDataFileName.c_str(), inicio, final);
-            break;
-        }
-        case 5:
-            ClearConsole();
-            break;
-        case 6:
-            // Serializar el B-Tree en el archivo 'btree_serialized.bin'
-            if (btreeUpdated) {
-                std::cout << "Guardando datos del BTree...\n";
-                //pageManager.SerializeBTree(t, btreeSerializedFileName.c_str());
-
-            }
-            std::cout << "Saliendo...\n";
-            break;
-        default:
-            std::cout << "Opcion no valida. Intente nuevamente.\n";
-        }
-    } while (opcion != 6);
-
-    fin = std::chrono::system_clock::now();
-
-    std::chrono::duration<double> tiempo = fin - inicio;
-    double tiempo_segundos = tiempo.count();
-    std::cout << "\nEl tiempo de ejecucion es: " << tiempo_segundos << " segundos";
-    std::cout << "\nfinished xd\n";
-}
-*/
