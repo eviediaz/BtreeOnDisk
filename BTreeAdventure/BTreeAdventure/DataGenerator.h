@@ -43,12 +43,14 @@ public:
         return persona;
     }
 
-    void GenerateNRecordsData(long numberOfRecordsToGenerate, PageManager& pageManager)
+    void GenerateNRecordsData(long numberOfRecordsToGenerate, PageManager& pageManager, const char* filePath)
     {
         for (long i = 0; i < numberOfRecordsToGenerate; ++i)
         {
-            Personita persona = generar_persona_aleatoria(i);
-            pageManager.WritePersonitaInDisk(i, persona);
+            // Agregar la nueva persona al archivo
+            Personita newPerson = GenerateRandomPersonita();
+            std::vector<Personita> newPersonitas = { newPerson };
+            pageManager.AppendPersonitasToFile(newPersonitas, filePath);
 
             if (i % 100000 == 0)
             {
@@ -58,12 +60,6 @@ public:
         }
 
         std::cout << "Generacion completada." << std::endl;
-        long fileSize = pageManager.GetFileSize();
-
-        // calculate the total of recods in the file
-        long totalRecords = fileSize / sizeof(Personita);
-
-        // calculate 't' of BTree
     }
 private:
     std::unordered_set<std::string> generatedDNIs;
