@@ -1,4 +1,5 @@
-#pragma once
+#ifndef BTREE_H
+#define BTREE_H
 #include "BTreeNode.h"
 class BTree 
 {
@@ -102,3 +103,4 @@ public:
     }
 
 };
+#endif // BTREE_H

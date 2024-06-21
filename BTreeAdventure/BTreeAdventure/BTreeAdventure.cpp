@@ -15,6 +15,7 @@
 #include "BTree.h"
 #include "BTreeAdventure.h"
 #include "DiskHashMap.h"
+#include "DiskBTree.h"
 
 void mostrar_menu() {
     std::cout << "Menu de opciones:\n";
@@ -97,18 +98,50 @@ int main()
 
     inicio = std::chrono::system_clock::now();
 
-    const char* filename = "recycle.bin";
-    DiskHashMap hashmap(filename);
+    const char* filename = "btree_data.dat";
+    int minDegree = 2;
+
+    // Initialize DiskBTree
+    DiskBTree diskBTree(filename, minDegree);
+
+    // Insert some records
+    diskBTree.Insert("12345678", 1);
+    diskBTree.Insert("87654321", 2);
+    diskBTree.Insert("11112222", 3);
+    diskBTree.Insert("33334444", 4);
+    diskBTree.Insert("55556666", 5);
+
+    // Search for specific records
+    std::cout << "Searching for key '12345678': Page ID = " << diskBTree.Search("12345678") << std::endl;
+    std::cout << "Searching for key '87654321': Page ID = " << diskBTree.Search("87654321") << std::endl;
+    std::cout << "Searching for key '00000000': Page ID = " << diskBTree.Search("00000000") << std::endl;
+
+    // Traverse and print the B-Tree
+    std::cout << "Traversing B-Tree:" << std::endl;
+    diskBTree.Traverse();
+
+    // Remove some records
+    std::cout << "Removing key '11112222'" << std::endl;
+    diskBTree.Remove("11112222");
+
+    // Traverse and print the B-Tree after removal
+    std::cout << "Traversing B-Tree after removal:" << std::endl;
+    diskBTree.Traverse();
+
+    return 0;
+
+    /*
+    //const char* filename = "recycle.bin";
+    //DiskHashMap hashmap(filename);
 
     // Inserta una entrada
-    /*
     hashmap.Insert("12345678", 1);
     hashmap.Insert("87654321", 2);
     hashmap.Insert("57754221", 3);
     hashmap.Insert("98775401", 4);
     hashmap.Insert("61254221", 5);
     hashmap.Insert("32054221", 6);
-    */
+    
 
     // Buscar entradas
     long value1 = hashmap.Search("12345678");
@@ -130,6 +163,7 @@ int main()
     //value3 = hashmap.Search("57754221");
     //std::cout << "Valor después de eliminar 57754221: " << value3 << std::endl;
     //xd(dataGenerated, dataGenerator, pageManager, t, btreeSerializedFileName, citizenDataFileName);
+    */
 
     fin = std::chrono::system_clock::now();
 

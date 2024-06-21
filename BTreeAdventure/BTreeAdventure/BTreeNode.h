@@ -1,3 +1,6 @@
+#ifndef BTREE_NODE_H
+#define BTREE_NODE_H
+
 #include <iostream>
 #include <vector>
 #include <array>
@@ -404,3 +407,4 @@ private:
         delete sibling;
     }
 };
+#endif // BTREE_NODE_H
