@@ -137,6 +137,7 @@
     <ClInclude Include="BTreeNode.h" />
     <ClInclude Include="BTreeNodeDisk.h" />
     <ClInclude Include="DataGenerator.h" />
+    <ClInclude Include="DiskHashMap.h" />
     <ClInclude Include="DiskPageManager.h" />
     <ClInclude Include="PageManager.h" />
     <ClInclude Include="Person.h" />

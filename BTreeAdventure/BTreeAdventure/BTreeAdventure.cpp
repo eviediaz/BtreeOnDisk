@@ -13,15 +13,18 @@
 #include "PageManager.h"
 #include "Person.h"
 #include "BTree.h"
+#include "BTreeAdventure.h"
+#include "DiskHashMap.h"
 
 void mostrar_menu() {
     std::cout << "Menu de opciones:\n";
     std::cout << "1. Insertar un nuevo registro\n";
     std::cout << "2. Buscar un registro por DNI\n";
     std::cout << "3. Eliminar un registro por DNI\n";
-    std::cout << "4. Imprimir los primeros 100 registros\n";
-    std::cout << "5. Limpiar consola\n";
-    std::cout << "6. Salir\n";
+    std::cout << "4. Restaurar un ciudadano\n";
+    std::cout << "5. Imprimir los primeros 100 registros\n";
+    std::cout << "6. Limpiar consola\n";
+    std::cout << "7. Salir\n";
     std::cout << "Seleccione una opcion: ";
 }
 
@@ -69,9 +72,9 @@ int main()
     // estimate size of BTreeNode 4096 bytes 
     // t = 195 -> size of each node it's 8kb 8096
     // btre t = 195;
-    BTree t(195); // create btree with a given order (t) 
-    std::string btreeSerializedFileName = "btree_serialized.bin";
-    std::string citizenDataFileName = "people.bin";
+    BTree t(8); // create btree with a given order (t) 
+    std::string btreeSerializedFileName = "BTREEtestingData.bin";
+    std::string citizenDataFileName = "testingData.bin";
 
     /*
     // For data < 1M
@@ -93,17 +96,64 @@ int main()
     std::chrono::time_point<std::chrono::system_clock> fin;
 
     inicio = std::chrono::system_clock::now();
-    if (!dataGenerated) 
+
+    const char* filename = "recycle.bin";
+    DiskHashMap hashmap(filename);
+
+    // Inserta una entrada
+    /*
+    hashmap.Insert("12345678", 1);
+    hashmap.Insert("87654321", 2);
+    hashmap.Insert("57754221", 3);
+    hashmap.Insert("98775401", 4);
+    hashmap.Insert("61254221", 5);
+    hashmap.Insert("32054221", 6);
+    */
+
+    // Buscar entradas
+    long value1 = hashmap.Search("12345678");
+    long value2 = hashmap.Search("87654321");
+    long value3 = hashmap.Search("57754221");
+    long value4 = hashmap.Search("98775401");
+    long value5 = hashmap.Search("61254221");
+    long value6 = hashmap.Search("32054221");
+
+    std::cout << "Valor para 12345678: " << value1 << std::endl;
+    std::cout << "Valor para 87654321: " << value2 << std::endl;
+    std::cout << "Valor para 57754221: " << value3 << std::endl;
+    std::cout << "Valor para 98775401: " << value4 << std::endl;
+    std::cout << "Valor para 61254221: " << value5 << std::endl;
+    std::cout << "Valor para 32054221: " << value6 << std::endl;
+
+    // Elimina una entrada
+    //hashmap.Remove("57754221");
+    //value3 = hashmap.Search("57754221");
+    //std::cout << "Valor después de eliminar 57754221: " << value3 << std::endl;
+    //xd(dataGenerated, dataGenerator, pageManager, t, btreeSerializedFileName, citizenDataFileName);
+
+    fin = std::chrono::system_clock::now();
+
+    std::chrono::duration<double> tiempo = fin - inicio;
+    double tiempo_segundos = tiempo.count();
+    std::cout << "\nEl tiempo de ejecucion es: " << tiempo_segundos << " segundos";
+    std::cout << "\nfinished xd\n";
+        
+    return 0;
+}
+
+void xd(bool dataGenerated, DataGenerator& dataGenerator, PageManager& pageManager, BTree& t, std::string& btreeSerializedFileName, std::string& citizenDataFileName)
+{
+    if (!dataGenerated)
     {
         //std::cout << "data NO GENERADA -> SE CREA DATOS RANDOM";
-        
-        long numberOfRecordsToGenerate = 500000;
+
+        long numberOfRecordsToGenerate = 50;
         dataGenerator.GenerateNRecordsData(numberOfRecordsToGenerate, pageManager);
         pageManager.ReadFileAndLoadToBtree(t);
         pageManager.SerializeBTree(t, btreeSerializedFileName.c_str());
-        
+
     }
-    else 
+    else
     {
         std::atomic<bool> loading{ true };
         std::thread loadingThread(LoadingMessage, std::ref(loading));
@@ -115,7 +165,7 @@ int main()
         std::cout << "\nB-Tree cargado a RAM.\n";
         ClearConsole();
     }
-    
+
     bool btreeUpdated = false;
     int opcion;
     do {
@@ -134,7 +184,7 @@ int main()
 
             int pageID = t.GetPageIDByDNI(nuevaPersona.dni);
             std::cout << "\n";
-            if (pageID == -1) 
+            if (pageID == -1)
             {
                 std::cout << "GOOD !! La data se insertara al BTree\n";
                 // Verificar el tamaño del archivo para determinar el nuevo pageID
@@ -143,13 +193,13 @@ int main()
                 pageManager.AddNewPerson(t, nuevaPersona, btreeSerializedFileName.c_str());
                 btreeUpdated = true;
             }
-            else 
+            else
             {
                 std::cout << "Ya existe ese DNI...genera otro\n";
             }
             std::cout << "\n";
 
-            
+
             break;
         }
         case 2: {
@@ -160,7 +210,7 @@ int main()
 
             int pageID = t.GetPageIDByDNI(dni.c_str());
             if (pageID >= 0) {
-                Personita persona = pageManager.ReadGetObjectByPageID(pageID);
+                Personita persona = pageManager.ReadFileGetPersonByPageID(pageID);
                 std::cout << "\n";
                 persona.ImprimirDatos();
             }
@@ -181,6 +231,24 @@ int main()
             break;
         }
         case 4: {
+            // Buscar el DNI de la persona a restarurar en el archivo dumped
+            std::string dni;
+            std::cout << "Ingrese el DNI a restaurar: ";
+            std::getline(std::cin, dni);
+
+            int pageID = t.GetPageIDByDNI(dni.c_str());
+            if (pageID >= 0) {
+                // restaurar
+                pageManager.RestorePerson(pageID);
+            }
+            else {
+                std::cout << "No existe una persona con el DNI " << dni << "\n";
+            }
+            std::cout << "\n";
+
+            break;
+        }
+        case 5:
             int inicio, final;
             std::cout << "Ingrese el indice de inicio: ";
             std::cin >> inicio;
@@ -189,11 +257,10 @@ int main()
 
             pageManager.PrintOneHundredRecords(citizenDataFileName.c_str(), inicio, final);
             break;
-        }
-        case 5:
+        case 6:
             ClearConsole();
             break;
-        case 6:
+        case 7:
             // Serializar el B-Tree en el archivo 'btree_serialized.bin'
             if (btreeUpdated) {
                 std::cout << "Guardando datos del BTree...\n";
@@ -205,14 +272,5 @@ int main()
         default:
             std::cout << "Opcion no valida. Intente nuevamente.\n";
         }
-    } while (opcion != 6);
-
-    fin = std::chrono::system_clock::now();
-
-    std::chrono::duration<double> tiempo = fin - inicio;
-    double tiempo_segundos = tiempo.count();
-    std::cout << "\nEl tiempo de ejecucion es: " << tiempo_segundos << " segundos";
-    std::cout << "\nfinished xd\n";
-        
-    return 0;
+    } while (opcion != 7);
 }

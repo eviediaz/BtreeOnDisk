@@ -58,7 +58,7 @@ public:
     /// </summary>
     /// <param name="pageID"></param>
     /// <returns> returns an 'Personita' object </returns>
-    Personita ReadGetObjectByPageID(const long& pageID)
+    Personita ReadFileGetPersonByPageID(const long& pageID)
     {
         Personita person;
         this->file.clear();
@@ -68,7 +68,7 @@ public:
             std::cerr << "Error al leer page: " << pageID << std::endl;
         }
         return person;
-    };
+    }
 
     /// <summary>
     /// Read the file by a given chunk, reads the chunk and insert the data in the BTree
@@ -220,6 +220,37 @@ public:
         }
     }
 
+    void WriteDeletedPersonToDisk(long pageID, const char* dni)
+    {
+        std::fstream file("dumped.bin", std::ios::in | std::ios::out | std::ios::binary | std::ios::app);
+        if (!file.is_open()) {
+            std::cerr << "Error al abrir el archivo dumped.bin." << std::endl;
+            return;
+        }
+
+        file.clear(); // Limpiar cualquier estado de error
+        file.seekp(pageID * sizeof(dni), std::ios::beg);
+        file.write(reinterpret_cast<char*>(&dni), sizeof(dni));
+
+        if (!file.good()) {
+            std::cerr << "Error al escribir en el archivo dumped.bin." << std::endl;
+        }
+
+        file.close();
+    }
+
+    const char* ReadDumpedFileAndGetDNI(const long& pageID)
+    {
+        const char* dni;
+        this->file.clear();
+        this->file.seekg(pageID * sizeof(dni), std::ios::beg);
+        this->file.read(reinterpret_cast<char*>(&dni), sizeof(dni));
+        if (!this->file.good()) {
+            std::cerr << "Error al leer page: " << pageID << std::endl;
+        }
+        return dni;
+    }
+
     // TODO: Change logic
     void DeleteRecordFromDisk(BTree& tree, const char* dni, const char* btreeFilename) {
         // Paso 1: Buscar el registro por DNI en el archivo 'people.bin'
@@ -232,6 +263,18 @@ public:
         else {
             std::cout << "Registro con DNI " << dni << " encontrado en " << pageID << std::endl;
         }
+
+        // Guardar la persona eliminada en dumped.bin
+        std::ofstream dumpedFile("dumped.bin", std::ios::binary | std::ios::app);
+        if (!dumpedFile.is_open()) {
+            std::cerr << "Error al abrir el archivo dumped.bin." << std::endl;
+            return;
+        }
+
+        dumpedFile.write(reinterpret_cast<char*>(&pageID), sizeof(pageID));
+        dumpedFile.write(dni, 9); // DNI tiene 9 caracteres incluyendo el nulo
+
+        dumpedFile.close();
 
         // Paso 2: Marcar el registro como eliminado en 'people.bin'
         MarkRecordAsDeleted(pageID);
@@ -269,6 +312,96 @@ public:
             std::cerr << "Error al marcar el registro como eliminado en el archivo." << std::endl;
         }
     }
+
+    void RestorePerson(const long pageID) {
+        // Abrir dumped.bin para buscar el DNI
+        std::ifstream dumpedFile("dumped.bin", std::ios::binary);
+        if (!dumpedFile.is_open()) {
+            std::cerr << "Error al abrir el archivo dumped.bin." << std::endl;
+            return;
+        }
+
+        if (pageID == -1) {
+            std::cerr << "Error page ID invalido";
+        }
+
+        // Leer el dumped y obtener el DNI
+        const char* dniToRestore = ReadDumpedFileAndGetDNI(pageID);
+
+        // Buscar en el archivo people.bin a la persona a restaurar
+        Personita personToRestore = ReadFileGetPersonByPageID(pageID);
+
+        // Restaurar el DNI original
+        std::strcpy(personToRestore.dni, dniToRestore);
+
+        dumpedFile.close();
+
+        // Volver a escribir los datos en el archivo 
+        WritePersonitaInDisk(pageID, personToRestore);
+        if (!this->file.good()) {
+            std::cerr << "Error al escribir el registro restaurado en el archivo principal." << std::endl;
+        }
+        else {
+            std::cout << "Registro restaurado exitosamente." << std::endl;
+        }
+
+        /*
+        // Abrir dumped.bin para buscar el DNI y el pageID
+        std::ifstream dumpedFile("dumped.bin", std::ios::binary);
+        if (!dumpedFile.is_open()) {
+            std::cerr << "Error al abrir el archivo dumped.bin." << std::endl;
+            return;
+        }
+
+        long pageID;
+        char restoredDNI[9];
+        bool found = false;
+
+        while (dumpedFile.read(reinterpret_cast<char*>(&pageID), sizeof(pageID))) {
+            dumpedFile.read(restoredDNI, 9);
+
+            if (std::strcmp(restoredDNI, dni) == 0) {
+                found = true;
+                break;
+            }
+        }
+
+        dumpedFile.close();
+
+        if (!found) {
+            std::cerr << "DNI no encontrado en dumped.bin." << std::endl;
+            return;
+        }
+
+        // Leer la persona eliminada del archivo principal usando pageID
+        this->file.clear();
+        this->file.seekg(pageID * sizeof(Personita), std::ios::beg);
+
+        Personita person;
+        this->file.read(reinterpret_cast<char*>(&person), sizeof(person));
+
+        if (!this->file.good()) {
+            std::cerr << "Error al leer el registro en el archivo principal." << std::endl;
+            return;
+        }
+
+        // Restaurar el DNI original
+        std::strcpy(person.dni, dni);
+
+        // Escribir la persona restaurada en el archivo principal
+        this->file.clear();
+        this->file.seekp(pageID * sizeof(Personita), std::ios::beg);
+        this->file.write(reinterpret_cast<char*>(&person), sizeof(person));
+
+        if (!this->file.good()) {
+            std::cerr << "Error al escribir el registro restaurado en el archivo principal." << std::endl;
+        }
+        else {
+            std::cout << "Registro restaurado exitosamente." << std::endl;
+        }
+        */
+    }
+
 
     void PrintOneHundredRecords(const char* filename, int inicio, int final) {
         std::ifstream file(filename, std::ios::binary);
