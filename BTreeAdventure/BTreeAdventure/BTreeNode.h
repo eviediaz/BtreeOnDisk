@@ -168,41 +168,6 @@ public:
         }
     }
 
-    /*
-    void Serialize(std::ofstream& outFile) {
-        outFile.write(reinterpret_cast<char*>(&isLeaf), sizeof(isLeaf));
-        outFile.write(reinterpret_cast<char*>(&actualNumberKeys), sizeof(actualNumberKeys));
-
-        for (int i = 0; i < actualNumberKeys; ++i) {
-            outFile.write(dnis[i].data(), 9); // 9 bytes para el DNI
-            outFile.write(reinterpret_cast<char*>(&pagesID[i]), sizeof(pagesID[i]));
-        }
-
-        if (!isLeaf) {
-            for (int i = 0; i <= actualNumberKeys; ++i) {
-                children[i]->Serialize(outFile); // Serializar los nodos hijos recursivamente
-            }
-        }
-    }
-
-    void Deserialize(std::ifstream& inFile) {
-        inFile.read(reinterpret_cast<char*>(&isLeaf), sizeof(isLeaf));
-        inFile.read(reinterpret_cast<char*>(&actualNumberKeys), sizeof(actualNumberKeys));
-
-        for (int i = 0; i < actualNumberKeys; ++i) {
-            inFile.read(dnis[i].data(), 9);
-            inFile.read(reinterpret_cast<char*>(&pagesID[i]), sizeof(pagesID[i]));
-        }
-
-        if (!isLeaf) {
-            for (int i = 0; i <= actualNumberKeys; ++i) {
-                children[i] = new BTreeNode(minimunDegree, false);
-                children[i]->Deserialize(inFile);
-            }
-        }
-    }
-    */
-
     void Traverse() {
         int i;
         for (i = 0; i < actualNumberKeys; i++) {

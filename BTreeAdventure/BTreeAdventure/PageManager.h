@@ -58,7 +58,7 @@ public:
     /// </summary>
     /// <param name="pageID"></param>
     /// <returns> returns an 'Personita' object </returns>
-    Personita ReadGetObjectByPageID(const long& pageID)
+    Personita ReadFileGetPersonByPageID(const long& pageID)
     {
         Personita person;
         this->file.clear();
@@ -111,54 +111,6 @@ public:
             std::cerr << "Error al leer el archivo." << std::endl;
         }
     }
-
-    
-    void SerializeTree(BTreeNode* node, std::ofstream& outFile) {
-        if (node == nullptr) return;
-
-        // Escribir si el nodo es una hoja
-        outFile.write(reinterpret_cast<char*>(&node->isLeaf), sizeof(node->isLeaf));
-        // Escribir el numero de claves en el nodo
-        outFile.write(reinterpret_cast<char*>(&node->actualNumberKeys), sizeof(node->actualNumberKeys));
-
-        // Escribir las claves y los identificadores de pagina
-        for (int i = 0; i < node->actualNumberKeys; ++i) {
-            outFile.write(node->dnis[i].data(), 9); // 9 bytes para el DNI
-            outFile.write(reinterpret_cast<char*>(&node->pagesID[i]), sizeof(node->pagesID[i]));
-        }
-
-        // Si el nodo no es una hoja, hay que escribir también sus hijos
-        if (!node->isLeaf) {
-            for (int i = 0; i <= node->actualNumberKeys; ++i) {
-                SerializeTree(node->children[i], outFile); // Serializar los nodos hijos recursivamente
-            }
-        }
-    }
-    
-
-    BTreeNode* DeserializeTree(std::ifstream& inFile, int minimunDegree) {
-        bool isLeaf;
-        int actualNumberKeys;
-        inFile.read(reinterpret_cast<char*>(&isLeaf), sizeof(isLeaf));
-        inFile.read(reinterpret_cast<char*>(&actualNumberKeys), sizeof(actualNumberKeys));
-
-        BTreeNode* node = new BTreeNode(minimunDegree, isLeaf);
-        node->actualNumberKeys = actualNumberKeys;
-
-        for (int i = 0; i < actualNumberKeys; ++i) {
-            inFile.read(node->dnis[i].data(), 9);
-            inFile.read(reinterpret_cast<char*>(&node->pagesID[i]), sizeof(node->pagesID[i]));
-        }
-
-        if (!isLeaf) {
-            for (int i = 0; i <= actualNumberKeys; ++i) {
-                node->children[i] = DeserializeTree(inFile, minimunDegree);
-            }
-        }
-
-        return node;
-    }
-
     
     void SerializeBTree(BTree& tree, const char* outputFilename) {
         std::ofstream outFile(outputFilename, std::ios::binary);
@@ -166,7 +118,7 @@ public:
             std::cerr << "Error al abrir el archivo de salida: " << outputFilename << " - " << strerror(errno) << std::endl;
             return;
         }
-        SerializeTree(tree.GetRoot(), outFile);
+        SerializeBTreeNode(tree.GetRoot(), outFile);
         outFile.close();
         std::cout << "\nB-Tree serializado en: " << outputFilename << std::endl;
     }
@@ -178,14 +130,19 @@ public:
             std::cerr << "Error al abrir el archivo de entrada: " << inputFilename << " - " << strerror(errno) << std::endl;
             return;
         }
-        BTreeNode* root = DeserializeTree(inFile, tree.GetMinimunDegree());
+        BTreeNode* root = DeserializeBTreeNode(inFile, tree.GetMinimunDegree());
         tree.SetRoot(root);
         inFile.close();
         std::cout << "\nB-Tree deserializado desde: " << inputFilename << std::endl;
     }
 
-    // TODO: Change logic
-    void AddNewPerson(BTree& tree, Personita& person, const char* outputFilename) {
+    /// <summary>
+    /// Writes a given person in disk and insert it to BTree
+    /// </summary>
+    /// <param name="tree"></param>
+    /// <param name="person"></param>
+    /// <param name="outputFilename"></param>
+    void InsertNewRecordInDiskAndBTree(BTree& tree, Personita& person, const char* outputFilename) {
         // Verificar el tamaño del archivo para determinar el nuevo pageID
         long newPageID = GetFileSize() / sizeof(Personita);
 
@@ -203,27 +160,10 @@ public:
         tree.Insert(person.dni, person.pageID);
     }
 
-    /// <summary>
-    /// Write a 'Personita' object (478 bytes) in the file
-    /// </summary>
-    /// <param name="newPageID"></param>
-    /// <param name="person"></param>
-    void WritePersonitaInDisk(long newPageID, Personita& person)
-    {
-        // Escribir el nuevo registro en el archivo
-        this->file.clear();
-        this->file.seekp(newPageID * sizeof(Personita), std::ios::beg);
-        this->file.write(reinterpret_cast<char*>(&person), sizeof(person));
-
-        if (!this->file.good()) {
-            std::cerr << "Error al escribir en el archivo " << filename << std::endl;
-        }
-    }
-
     // TODO: Change logic
     void DeleteRecordFromDisk(BTree& tree, const char* dni, const char* btreeFilename) {
         // Paso 1: Buscar el registro por DNI en el archivo 'people.bin'
-        long pageID = tree.GetPageIDByDNI(dni);
+        long pageID = tree.SearchDNIAndGetPageID(dni);
 
         if (pageID < 0) {
             std::cerr << "Registro con DNI " << dni << " no encontrado." << std::endl;
@@ -243,31 +183,6 @@ public:
 
         // Paso 3: Eliminar la clave del B-Tree
         tree.Remove(dni);
-    }
-
-    void MarkRecordAsDeleted(long pageID) {
-        // Crear una cadena de "DNI eliminado"
-        const char deletedDNI[9] = "DELETED";
-
-        // Mover el puntero a la posición del registro a eliminar
-        this->file.clear();
-        this->file.seekp(pageID * sizeof(Personita), std::ios::beg);
-
-        // Leer el registro actual
-        Personita person;
-        this->file.read(reinterpret_cast<char*>(&person), sizeof(person));
-
-        // Marcar el registro como eliminado
-        std::memcpy(person.dni, deletedDNI, sizeof(deletedDNI) - 1);
-        person.dni[sizeof(deletedDNI) - 1] = '\0'; // Agregar el carácter nulo al final
-
-        // Escribir el registro modificado de nuevo en el archivo
-        this->file.seekp(pageID * sizeof(Personita), std::ios::beg);
-        this->file.write(reinterpret_cast<char*>(&person), sizeof(person));
-
-        if (!this->file.good()) {
-            std::cerr << "Error al marcar el registro como eliminado en el archivo." << std::endl;
-        }
     }
 
     void PrintOneHundredRecords(const char* filename, int inicio, int final) {
@@ -309,4 +224,92 @@ private:
     // Private member variable to hold the value
     std::fstream file;
     const char* filename;
+
+    /// <summary>
+    /// Write a 'Personita' object (478 bytes) in the file
+    /// </summary>
+    /// <param name="newPageID"></param>
+    /// <param name="person"></param>
+    void WritePersonitaInDisk(long newPageID, Personita& person)
+    {
+        // Escribir el nuevo registro en el archivo
+        this->file.clear();
+        this->file.seekp(newPageID * sizeof(Personita), std::ios::beg);
+        this->file.write(reinterpret_cast<char*>(&person), sizeof(person));
+
+        if (!this->file.good()) {
+            std::cerr << "Error al escribir en el archivo " << filename << std::endl;
+        }
+    }
+
+    void MarkRecordAsDeleted(long pageID) {
+        // Crear una cadena de "DNI eliminado"
+        const char deletedDNI[9] = "DELETED";
+
+        // Mover el puntero a la posición del registro a eliminar
+        this->file.clear();
+        this->file.seekp(pageID * sizeof(Personita), std::ios::beg);
+
+        // Leer el registro actual
+        Personita person;
+        this->file.read(reinterpret_cast<char*>(&person), sizeof(person));
+
+        // Marcar el registro como eliminado
+        std::memcpy(person.dni, deletedDNI, sizeof(deletedDNI) - 1);
+        person.dni[sizeof(deletedDNI) - 1] = '\0'; // Agregar el carácter nulo al final
+
+        // Escribir el registro modificado de nuevo en el archivo
+        this->file.seekp(pageID * sizeof(Personita), std::ios::beg);
+        this->file.write(reinterpret_cast<char*>(&person), sizeof(person));
+
+        if (!this->file.good()) {
+            std::cerr << "Error al marcar el registro como eliminado en el archivo." << std::endl;
+        }
+    }
+
+    void SerializeBTreeNode(BTreeNode* node, std::ofstream& outFile) {
+        if (node == nullptr) return;
+
+        // Escribir si el nodo es una hoja
+        outFile.write(reinterpret_cast<char*>(&node->isLeaf), sizeof(node->isLeaf));
+        // Escribir el numero de claves en el nodo
+        outFile.write(reinterpret_cast<char*>(&node->actualNumberKeys), sizeof(node->actualNumberKeys));
+
+        // Escribir las claves y los identificadores de pagina
+        for (int i = 0; i < node->actualNumberKeys; ++i) {
+            outFile.write(node->dnis[i].data(), 9); // 9 bytes para el DNI
+            outFile.write(reinterpret_cast<char*>(&node->pagesID[i]), sizeof(node->pagesID[i]));
+        }
+
+        // Si el nodo no es una hoja, hay que escribir también sus hijos
+        if (!node->isLeaf) {
+            for (int i = 0; i <= node->actualNumberKeys; ++i) {
+                SerializeBTreeNode(node->children[i], outFile); // Serializar los nodos hijos recursivamente
+            }
+        }
+    }
+
+
+    BTreeNode* DeserializeBTreeNode(std::ifstream& inFile, int minimunDegree) {
+        bool isLeaf;
+        int actualNumberKeys;
+        inFile.read(reinterpret_cast<char*>(&isLeaf), sizeof(isLeaf));
+        inFile.read(reinterpret_cast<char*>(&actualNumberKeys), sizeof(actualNumberKeys));
+
+        BTreeNode* node = new BTreeNode(minimunDegree, isLeaf);
+        node->actualNumberKeys = actualNumberKeys;
+
+        for (int i = 0; i < actualNumberKeys; ++i) {
+            inFile.read(node->dnis[i].data(), 9);
+            inFile.read(reinterpret_cast<char*>(&node->pagesID[i]), sizeof(node->pagesID[i]));
+        }
+
+        if (!isLeaf) {
+            for (int i = 0; i <= actualNumberKeys; ++i) {
+                node->children[i] = DeserializeBTreeNode(inFile, minimunDegree);
+            }
+        }
+
+        return node;
+    }
 };

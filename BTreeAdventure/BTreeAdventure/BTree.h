@@ -62,7 +62,7 @@ public:
         }
     }
 
-    int GetPageIDByDNI(const char* dni) {
+    int SearchDNIAndGetPageID(const char* dni) {
         // Si la raíz es nula, el árbol está vacío, retorna -1
         if (root == nullptr) {
             std::cout << "\nEl arbol B esta vacio. Clave " << dni << " no encontrada." << std::endl;
