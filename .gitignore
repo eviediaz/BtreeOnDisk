@@ -32,6 +32,7 @@
 *.app
 
 # registry files
+*.bin
 *.index
 
 # Directories
