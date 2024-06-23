@@ -91,7 +91,7 @@ int main()
 
     //BenchmarkLecturaSerializadoTreintaMillones();
 
-    /*
+    
     // FILE NAMES
     std::string btreeSerializedFileName = "btree_serialized.bin";
     std::string citizenDataFileName = "people.bin";
@@ -99,13 +99,14 @@ int main()
     // NUMBER OF RANDOM RECORDS TO GENERATE
     long numberOfRecordsToGenerate = 100;
 
-    * TODO: Improve BTree order calculus logic
+    /* TODO: Improve BTree order calculus logic
     int minimunDegree                       4 bytes                            
     std::vector<int> pagesID;               (2 * t - 1 ) * 4 bytes
     std::vector<std::array<char, 9>> dnis;  (2 * t - 1 ) * 9 bytes
     std::vector<BTreeNode*> children;       (2 * t ) * 8 bytes
     int actualNumberKeys;                   4 bytes
     bool isLeaf;                            1 bytes
+    */
     
 
     // for data 33 M
@@ -127,7 +128,7 @@ int main()
     std::chrono::time_point<std::chrono::system_clock> fin;
 
     inicio = std::chrono::system_clock::now();
-    /*
+    
     if (!dataGenerated) 
     {
         GenerateRandomDataAndCreateBTree(citizenDataFileName, dataGenerator, numberOfRecordsToGenerate, pageManager, t, btreeSerializedFileName);
@@ -184,7 +185,7 @@ int main()
     std::cout << "\n== PROGRAMA TERMINADO ==\n";
         
     return 0;
-    */
+    
 }
 
 void BenchmarkLecturaSerializadoTreintaMillones()

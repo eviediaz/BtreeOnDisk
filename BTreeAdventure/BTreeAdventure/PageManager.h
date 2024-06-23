@@ -137,6 +137,23 @@ public:
     }
 
     /// <summary>
+    /// Write a 'Personita' object (478 bytes) in the file
+    /// </summary>
+    /// <param name="newPageID"></param>
+    /// <param name="person"></param>
+    void WritePersonitaInDisk(long newPageID, Personita& person)
+    {
+        // Escribir el nuevo registro en el archivo
+        this->file.clear();
+        this->file.seekp(newPageID * sizeof(Personita), std::ios::beg);
+        this->file.write(reinterpret_cast<char*>(&person), sizeof(person));
+
+        if (!this->file.good()) {
+            std::cerr << "Error al escribir en el archivo " << filename << std::endl;
+        }
+    }
+
+    /// <summary>
     /// Writes a given person in disk and insert it to BTree
     /// </summary>
     /// <param name="tree"></param>
@@ -224,23 +241,6 @@ private:
     // Private member variable to hold the value
     std::fstream file;
     const char* filename;
-
-    /// <summary>
-    /// Write a 'Personita' object (478 bytes) in the file
-    /// </summary>
-    /// <param name="newPageID"></param>
-    /// <param name="person"></param>
-    void WritePersonitaInDisk(long newPageID, Personita& person)
-    {
-        // Escribir el nuevo registro en el archivo
-        this->file.clear();
-        this->file.seekp(newPageID * sizeof(Personita), std::ios::beg);
-        this->file.write(reinterpret_cast<char*>(&person), sizeof(person));
-
-        if (!this->file.good()) {
-            std::cerr << "Error al escribir en el archivo " << filename << std::endl;
-        }
-    }
 
     void MarkRecordAsDeleted(long pageID) {
         // Crear una cadena de "DNI eliminado"
