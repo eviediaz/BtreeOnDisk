@@ -547,9 +547,6 @@ void InsertOperation(DataGenerator& dataGenerator, BTree& t, PageManager& pageMa
     if (pageID == -1)
     {
         std::cout << "GOOD !! La data se insertara al BTree\n";
-        // Verificar el tamaño del archivo para determinar el nuevo pageID
-        long newPageID = pageManager.GetFileSize() / sizeof(Personita);
-        t.Insert(newRandomPerson.dni, newPageID);
         pageManager.InsertNewRecordInDiskAndBTree(t, newRandomPerson, btreeSerializedFileName.c_str());
         btreeUpdated = true;
     }
