@@ -200,6 +200,31 @@ public:
         }
     }
 
+    void RangeSearch(const std::string& start, const std::string& end, std::vector<std::string>& result) {
+        int i = 0;
+        while (i < actualNumberKeys && dnis[i].data() < start) {
+            i++;
+        }
+
+        if (!isLeaf) {
+            children[i]->RangeSearch(start, end, result);
+        }
+
+        while (i < actualNumberKeys && dnis[i].data() <= end) {
+            if (dnis[i].data() >= start && dnis[i].data() <= end) {
+                result.push_back(dnis[i].data());
+            }
+            if (!isLeaf) {
+                children[i + 1]->RangeSearch(start, end, result);
+            }
+            i++;
+        }
+
+        if (i < actualNumberKeys && !isLeaf) {
+            children[i]->RangeSearch(start, end, result);
+        }
+    }
+
 private:
     void RemoveFromLeaf(int idx) {
         for (int i = idx + 1; i < actualNumberKeys; ++i) {
@@ -247,6 +272,10 @@ private:
 
     int GetPredecessorPageID(int idx) {
         BTreeNode* cur = children[idx];
+        if (cur == nullptr) {
+            // Manejar el caso cuando cur es nullptr
+            return -1; // o lanzar una excepción
+        }
         while (!cur->isLeaf) {
             cur = cur->children[cur->actualNumberKeys];
         }
@@ -255,6 +284,10 @@ private:
 
     int GetSuccessorPageID(int idx) {
         BTreeNode* cur = children[idx + 1];
+        if (cur == nullptr) {
+            // Manejar el caso cuando cur es nullptr
+            return -1; // o lanzar una excepción
+        }
         while (!cur->isLeaf) {
             cur = cur->children[0];
         }

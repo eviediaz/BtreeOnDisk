@@ -237,6 +237,60 @@ public:
         file.close();
     }
 
+    void RangeSearchAndPrint(BTree& tree, const std::string& start, const std::string& end) {
+        std::vector<std::string> dnisInRange = tree.RangeSearch(start, end);
+
+        std::cout << "DNIs encontrados en el rango [" << start << ", " << end << "]:" << std::endl;
+
+        size_t totalRecords = dnisInRange.size();
+        size_t recordsPerPage = 100;
+        size_t currentPage = 0;
+        bool morePages = true;
+
+        while (morePages && currentPage * recordsPerPage < totalRecords) {
+            std::cout << "--------------------------------------------------------------------------------------\n";
+            std::cout << "| DNI       | Nombre                | Apellido             | Edad | Correo                     |\n";
+            std::cout << "--------------------------------------------------------------------------------------\n";
+
+            size_t startIdx = currentPage * recordsPerPage;
+            size_t endIdx = std::min(startIdx + recordsPerPage, totalRecords);
+
+            for (size_t i = startIdx; i < endIdx; ++i) {
+                const auto& dni = dnisInRange[i];
+                int pageID = tree.SearchDNIAndGetPageID(dni.c_str());
+                if (pageID != -1) {
+                    Personita person = ReadFileGetPersonByPageID(pageID);
+                    std::cout << "| " << std::setw(10) << std::left << person.dni
+                        << " | " << std::setw(20) << std::left << person.name
+                        << " | " << std::setw(20) << std::left << person.lastname
+                        << " | " << std::setw(4) << std::left << person.edad
+                        << " | " << std::setw(25) << std::left << person.email
+                        << " |\n";
+                }
+            }
+
+            std::cout << "--------------------------------------------------------------------------------------\n";
+            std::cout << "Mostrando registros " << startIdx + 1 << " a " << endIdx << " de " << totalRecords << std::endl;
+
+            if (endIdx < totalRecords) {
+                char choice;
+                std::cout << "¿Desea ver los siguientes 100 registros? (s/n): ";
+                std::cin >> choice;
+                if (choice == 's' || choice == 'S') {
+                    currentPage++;
+                }
+                else {
+                    morePages = false;
+                }
+            }
+            else {
+                morePages = false;
+            }
+        }
+
+        std::cout << "Total DNIs mostrados: " << std::min(totalRecords, (currentPage + 1) * recordsPerPage) << std::endl;
+    }
+
 private:
     // Private member variable to hold the value
     std::fstream file;

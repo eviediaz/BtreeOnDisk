@@ -101,4 +101,12 @@ public:
         if (root != nullptr) root->printBTree();
     }
 
+    std::vector<std::string> RangeSearch(const std::string& start, const std::string& end) {
+        std::vector<std::string> result;
+        if (root != nullptr) {
+            root->RangeSearch(start, end, result);
+        }
+        return result;
+    }
+
 };

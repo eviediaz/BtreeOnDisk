@@ -42,4 +42,6 @@ void BenchmarkLecturaSerializadoVeinteMillones();
 
 void BenchmarkLecturaSerializadoTreintaMillones();
 
+void RangeSearchOperation(PageManager& pageManager, BTree& t);
+
 void DeleteOperation(PageManager& pageManager, BTree& t, std::string& btreeSerializedFileName, bool& btreeUpdated);

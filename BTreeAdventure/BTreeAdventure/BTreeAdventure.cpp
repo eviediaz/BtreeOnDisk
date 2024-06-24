@@ -22,7 +22,8 @@ void mostrar_menu() {
     std::cout << "3. Eliminar un registro por DNI\n";
     std::cout << "4. Imprimir los primeros 100 registros\n";
     std::cout << "5. Limpiar consola\n";
-    std::cout << "6. Salir\n";
+    std::cout << "6. Busqueda por rangos\n";
+    std::cout << "7. Salir\n";
     std::cout << "Seleccione una opcion: ";
 }
 
@@ -93,25 +94,28 @@ int main()
 
     
     // FILE NAMES
-    std::string btreeSerializedFileName = "btree_serialized.bin";
+    std::string btreeSerializedFileName = "btreeSerializadoFinal.bin";
     std::string citizenDataFileName = "people.bin";
 
     // NUMBER OF RANDOM RECORDS TO GENERATE
-    long numberOfRecordsToGenerate = 100;
+    long numberOfRecordsToGenerate = 100;    
 
-    /* TODO: Improve BTree order calculus logic
-    int minimunDegree                       4 bytes                            
-    std::vector<int> pagesID;               (2 * t - 1 ) * 4 bytes
-    std::vector<std::array<char, 9>> dnis;  (2 * t - 1 ) * 9 bytes
-    std::vector<BTreeNode*> children;       (2 * t ) * 8 bytes
-    int actualNumberKeys;                   4 bytes
-    bool isLeaf;                            1 bytes
+    /*
+    * calculus of T in BTree
+    * we want a height of 4
+    * h = log N in base T
+    * h = log N / log T
+    * we know
+    * N = 33 000 000
+    * h = 7.52 / log T
+    * 4 = 7.52 / log T
+    * aproximation 7.52 ->8
+    * log T = 2
+    * T = 100 , start "guessing" with values
+    * logT=128 -> 2.11  logT = 256-> 3
+    * 1.3GB             1.4GB
+    * logT=195 
     */
-    
-
-    // for data 33 M
-    // estimate size of BTreeNode 4096 bytes 
-    // t = 195 -> size of each node it's 8kb 8096
     BTree t(195); // create btree with a given order (t) 
 
     // the data generator to generate randomized citizen data
@@ -128,6 +132,9 @@ int main()
     std::chrono::time_point<std::chrono::system_clock> fin;
 
     inicio = std::chrono::system_clock::now();
+    //pageManager.ReadFileAndLoadToBtree(t);
+    //pageManager.SerializeBTree(t, btreeSerializedFileName.c_str());
+    
     
     if (!dataGenerated) 
     {
@@ -168,13 +175,16 @@ int main()
             ClearConsole();
             break;
         case 6:
+            RangeSearchOperation(pageManager, t);
+            break;
+        case 7:
             // Serializar el B-Tree en el archivo 'btree_serialized.bin'
             SaveChangesInBTree(btreeUpdated, pageManager, t, btreeSerializedFileName);
             break;
         default:
             std::cout << "Opcion no valida. Intente nuevamente.\n";
         }
-    } while (option != 6);
+    } while (option != 7);
     
 
     fin = std::chrono::system_clock::now();
@@ -186,6 +196,17 @@ int main()
         
     return 0;
     
+}
+
+void RangeSearchOperation(PageManager& pageManager, BTree& t)
+{
+    std::string start, end;
+    std::cout << "Ingrese el DNI inicial del rango: ";
+    std::cin >> start;
+    std::cout << "Ingrese el DNI final del rango: ";
+    std::cin >> end;
+
+    pageManager.RangeSearchAndPrint(t, start, end);
 }
 
 void BenchmarkLecturaSerializadoTreintaMillones()
