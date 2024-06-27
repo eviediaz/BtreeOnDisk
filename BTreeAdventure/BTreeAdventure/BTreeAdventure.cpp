@@ -124,15 +124,7 @@ int main()
     // the page manager to do write and read disk operations in a given file
     PageManager pageManager(citizenDataFileName.c_str());
 
-    std::ifstream infile(citizenDataFileName);
-    bool dataGenerated = infile.good();
-    infile.close();
-
-    //dataGenerator.GenerateNRecordsData(numberOfRecordsToGenerate, pageManager);
-    //pageManager.ReadFileAndLoadToBtree(t);
-    //pageManager.SerializeBTree(t);
-
-    if (!dataGenerated) 
+    if (pageManager.GetFileSize() == 0)
     {
         GenerateRandomDataAndCreateBTree(citizenDataFileName, dataGenerator, numberOfRecordsToGenerate, pageManager, t, btreeSerializedFileName);
     }
