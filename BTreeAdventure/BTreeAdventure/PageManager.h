@@ -238,7 +238,16 @@ public:
     }
 
     void RangeSearchAndPrint(BTree& tree, const std::string& start, const std::string& end) {
+        std::chrono::time_point<std::chrono::system_clock> inicio;
+        std::chrono::time_point<std::chrono::system_clock> fin;
+
+        inicio = std::chrono::system_clock::now();
         std::vector<std::string> dnisInRange = tree.RangeSearch(start, end);
+        fin = std::chrono::system_clock::now();
+
+        std::chrono::duration<double> tiempo = fin - inicio;
+        double tiempo_segundos = tiempo.count();
+        std::cout << "\nEl tiempo de ejecucion es: " << tiempo_segundos << " segundos";
 
         std::cout << "DNIs encontrados en el rango [" << start << ", " << end << "]:" << std::endl;
 

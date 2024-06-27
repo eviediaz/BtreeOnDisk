@@ -128,14 +128,10 @@ int main()
     bool dataGenerated = infile.good();
     infile.close();
 
-    std::chrono::time_point<std::chrono::system_clock> inicio;
-    std::chrono::time_point<std::chrono::system_clock> fin;
-
-    inicio = std::chrono::system_clock::now();
+    //dataGenerator.GenerateNRecordsData(numberOfRecordsToGenerate, pageManager);
     //pageManager.ReadFileAndLoadToBtree(t);
-    //pageManager.SerializeBTree(t, btreeSerializedFileName.c_str());
-    
-    
+    //pageManager.SerializeBTree(t);
+
     if (!dataGenerated) 
     {
         GenerateRandomDataAndCreateBTree(citizenDataFileName, dataGenerator, numberOfRecordsToGenerate, pageManager, t, btreeSerializedFileName);
@@ -186,12 +182,6 @@ int main()
         }
     } while (option != 7);
     
-
-    fin = std::chrono::system_clock::now();
-
-    std::chrono::duration<double> tiempo = fin - inicio;
-    double tiempo_segundos = tiempo.count();
-    std::cout << "\nEl tiempo de ejecucion es: " << tiempo_segundos << " segundos";
     std::cout << "\n== PROGRAMA TERMINADO ==\n";
         
     return 0;
